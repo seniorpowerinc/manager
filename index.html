@@ -352,7 +352,24 @@
       <button class="btn" onclick="closeCoverModal()">取消</button>
     </div>
   </div>
-
+  
+  <div id="renameModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeRenameModal()">&times;</span>
+    <h3>重新命名 Repo</h3>
+    <div class="form-group">
+      <label>新名稱</label>
+      <input id="newRepoName" type="text">
+    </div>
+    <div class="form-group">
+      <label>新描述</label>
+      <textarea id="newRepoDescription" rows="2"></textarea>
+    </div>
+    <button class="btn success" onclick="confirmRename()">確認</button>
+    <button class="btn" onclick="closeRenameModal()">取消</button>
+  </div>
+</div>
+  
   <script>
     // UTF8-safe base64
     function toBase64(str) {
