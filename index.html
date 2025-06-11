@@ -408,50 +408,71 @@
     function logout() { location.reload(); }
 
     // loadRepos
+    /**
+ * 載入並顯示包含 data.json 且 groups 包含 "gift" 的 repo
+ */
     async function loadRepos() {
       const grid = document.getElementById('reposGrid');
       grid.innerHTML = '';
+
       try {
-        const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
-          headers: { 'Authorization': `token ${currentToken}` }
-        });
+        // 1. 取得使用者所有 repos（最多 100 筆，依更新時間排序）
+        const res = await fetch(
+          'https://api.github.com/user/repos?per_page=100&sort=updated',
+          { headers: { 'Authorization': `token ${currentToken}` } }
+        );
         if (!res.ok) throw new Error('無法取得 Repos');
-        const list = await res.json(), filtered = [];
+
+        const list = await res.json();
+        const filtered = [];
+
+        // 2. 逐一檢查 data.json 並解析 content
         for (const r of list) {
           try {
-            const res = await fetch(`https://api.github.com/repos/${r.full_name}/contents/data.json`, {
-              headers: { 'Authorization': `token ${currentToken}` }
-            });
+            const c = await fetch(
+              `https://api.github.com/repos/${r.full_name}/contents/data.json`,
+              { headers: { 'Authorization': `token ${currentToken}` } }
+            );
+            if (!c.ok) continue; // 沒有 data.json 就跳過
 
-            if (!res.ok) continue;
-
-            const meta = await res.json();
-
-            // 解析 base64 的內容
+            const meta = await c.json();
+            // 將 Base64 內容解碼為 UTF-8
             const decoded = decodeURIComponent(escape(atob(meta.content)));
             const config = JSON.parse(decoded);
 
-            // ✅ 條件：groups 為 "gift" 或包含 gift 的陣列
+            // 只保留 groups === 'gift' 或陣列包含 'gift'
             if (
               config.groups === 'gift' ||
               (Array.isArray(config.groups) && config.groups.includes('gift'))
             ) {
               filtered.push(r);
             }
-
-          } catch (e) {
-            // 忽略解析失敗的
-            console.warn(`無法解析 ${r.full_name}/data.json`, e);
+          } catch {
+            // 忽略 network 或解析錯誤
           }
         }
 
-        function displayRepos(repos) {
-          const grid = document.getElementById('reposGrid');
-          grid.innerHTML = '';
-          repos.forEach(r => {
-            const url = `https://${r.owner.login}.github.io/${r.name}/`;
-            const card = document.createElement('div'); card.className = 'repo-card';
-            card.innerHTML = `
+        // 3. 顯示結果
+        if (!filtered.length) {
+          grid.innerHTML =
+            '<p style="grid-column:1/-1;text-align:center;color:#666;">尚無任何禮物網站</p>';
+        } else {
+          displayRepos(filtered);
+        }
+
+      } catch (e) {
+        alert('載入失敗：' + e.message);
+      }
+    }
+
+
+    function displayRepos(repos) {
+      const grid = document.getElementById('reposGrid');
+      grid.innerHTML = '';
+      repos.forEach(r => {
+        const url = `https://${r.owner.login}.github.io/${r.name}/`;
+        const card = document.createElement('div'); card.className = 'repo-card';
+        card.innerHTML = `
           <div class="repo-header">
             <div class="repo-name">${r.name}</div>
             <div class="status-indicator" id="status-${r.name}">檢查中…</div>
@@ -463,201 +484,201 @@
             <button class="btn success" onclick="dispatchWorkflow('${r.name}')">發布</button>
             <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
           </div>`;
-            grid.appendChild(card);
-            checkWorkflow(r.name);
-          });
-        }
+        grid.appendChild(card);
+        checkWorkflow(r.name);
+      });
+    }
 
-        // dispatch workflow
-        async function dispatchWorkflow(repo) {
-          await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/workflows/deploy.yml/dispatches`, {
+    // dispatch workflow
+    async function dispatchWorkflow(repo) {
+      await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/workflows/deploy.yml/dispatches`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${currentToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ref: 'main' })
+      });
+      alert('已觸發發布 Workflow');
+    }
+
+    // check workflow run
+    async function checkWorkflow(repo) {
+      const badge = document.getElementById(`status-${repo}`);
+      try {
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/runs?workflow_id=deploy.yml&per_page=1`, {
+          headers: { 'Authorization': `token ${currentToken}` }
+        });
+        const d = await res.json(), run = d.workflow_runs[0];
+        if (!run) {
+          badge.textContent = '未發布';
+          badge.className = 'status-indicator status-inactive';
+        } else if (run.conclusion === 'success') {
+          badge.textContent = '✅ 成功';
+          badge.className = 'status-indicator status-active';
+        } else {
+          badge.textContent = '❌ 失敗';
+          badge.className = 'status-indicator status-inactive';
+        }
+      } catch {
+        badge.textContent = '未知';
+        badge.className = 'status-indicator status-inactive';
+      }
+    }
+
+    // createRepo
+    document.getElementById('createRepoBtn').onclick = createRepo;
+    async function createRepo() {
+      const name = document.getElementById('repoName').value.trim();
+      const pageTitle = document.getElementById('pageTitle').value.trim();
+      const pdfLink = document.getElementById('pdfUrl').value.trim();
+      if (!name) return alert('請輸入 Repo 名稱');
+      if (!pageTitle) return alert('請輸入 網站名稱');
+      if (!uploadedCoverFile) return alert('請上傳封面圖');
+
+      const btn = document.getElementById('createRepoBtn');
+      btn.innerHTML = '創建中…<span class="loading"></span>';
+      btn.disabled = true;
+
+      try {
+        // 1) 從範本建立新 Repo
+        let res = await fetch(
+          `https://api.github.com/repos/${TEMPLATE_OWNER}/${TEMPLATE_REPO}/generate`,
+          {
             method: 'POST',
             headers: {
               'Authorization': `token ${currentToken}`,
-              'Content-Type': 'application/json'
+              'Accept': 'application/vnd.github.baptiste-preview+json'
             },
-            body: JSON.stringify({ ref: 'main' })
-          });
-          alert('已觸發發布 Workflow');
-        }
-
-        // check workflow run
-        async function checkWorkflow(repo) {
-          const badge = document.getElementById(`status-${repo}`);
-          try {
-            const res = await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/runs?workflow_id=deploy.yml&per_page=1`, {
-              headers: { 'Authorization': `token ${currentToken}` }
-            });
-            const d = await res.json(), run = d.workflow_runs[0];
-            if (!run) {
-              badge.textContent = '未發布';
-              badge.className = 'status-indicator status-inactive';
-            } else if (run.conclusion === 'success') {
-              badge.textContent = '✅ 成功';
-              badge.className = 'status-indicator status-active';
-            } else {
-              badge.textContent = '❌ 失敗';
-              badge.className = 'status-indicator status-inactive';
-            }
-          } catch {
-            badge.textContent = '未知';
-            badge.className = 'status-indicator status-inactive';
+            body: JSON.stringify({ owner: currentUser, name })
           }
-        }
+        );
+        if (!res.ok) throw new Error('從範本建立失敗');
+        // 等 GitHub 初始化 repo
+        await new Promise(r => setTimeout(r, 2000));
 
-        // createRepo
-        document.getElementById('createRepoBtn').onclick = createRepo;
-        async function createRepo() {
-          const name = document.getElementById('repoName').value.trim();
-          const pageTitle = document.getElementById('pageTitle').value.trim();
-          const pdfLink = document.getElementById('pdfUrl').value.trim();
-          if (!name) return alert('請輸入 Repo 名稱');
-          if (!pageTitle) return alert('請輸入 網站名稱');
-          if (!uploadedCoverFile) return alert('請上傳封面圖');
+        // 2) 上傳封面圖
+        const imgB64 = await new Promise(r => {
+          const fr = new FileReader();
+          fr.onload = () => r(fr.result.split(',')[1]);
+          fr.readAsDataURL(uploadedCoverFile);
+        });
+        await uploadFile(name, `images/${uploadedCoverFile.name}`, imgB64, true);
 
-          const btn = document.getElementById('createRepoBtn');
-          btn.innerHTML = '創建中…<span class="loading"></span>';
-          btn.disabled = true;
+        // 3) 更新 data.json
+        const dataObj = {
+          pageTitle: pageTitle,
+          lang: 'zh-TW',
+          pdf: pdfLink,
+          coverImage: `images/${uploadedCoverFile.name}`
+        };
+        const dataB64 = toBase64(JSON.stringify(dataObj, null, 2));
+        await uploadFile(name, 'data.json', dataB64, true);
 
+        // 4) 啟用 Pages（原始方式）
+        await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `token ${currentToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ source: { branch: 'main', path: '/' } })
+        });
+
+        // 5) 每 5 秒輪詢，最多 48 次 (~4 分鐘)，直到 siteUrl 不再 404
+        const siteUrl = `https://${currentUser}.github.io/${name}/`;
+        let published = false;
+        for (let i = 0; i < 48; i++) {
           try {
-            // 1) 從範本建立新 Repo
-            let res = await fetch(
-              `https://api.github.com/repos/${TEMPLATE_OWNER}/${TEMPLATE_REPO}/generate`,
-              {
-                method: 'POST',
-                headers: {
-                  'Authorization': `token ${currentToken}`,
-                  'Accept': 'application/vnd.github.baptiste-preview+json'
-                },
-                body: JSON.stringify({ owner: currentUser, name })
-              }
-            );
-            if (!res.ok) throw new Error('從範本建立失敗');
-            // 等 GitHub 初始化 repo
-            await new Promise(r => setTimeout(r, 2000));
-
-            // 2) 上傳封面圖
-            const imgB64 = await new Promise(r => {
-              const fr = new FileReader();
-              fr.onload = () => r(fr.result.split(',')[1]);
-              fr.readAsDataURL(uploadedCoverFile);
-            });
-            await uploadFile(name, `images/${uploadedCoverFile.name}`, imgB64, true);
-
-            // 3) 更新 data.json
-            const dataObj = {
-              pageTitle: pageTitle,
-              lang: 'zh-TW',
-              pdf: pdfLink,
-              coverImage: `images/${uploadedCoverFile.name}`
-            };
-            const dataB64 = toBase64(JSON.stringify(dataObj, null, 2));
-            await uploadFile(name, 'data.json', dataB64, true);
-
-            // 4) 啟用 Pages（原始方式）
-            await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `token ${currentToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ source: { branch: 'main', path: '/' } })
-            });
-
-            // 5) 每 5 秒輪詢，最多 48 次 (~4 分鐘)，直到 siteUrl 不再 404
-            const siteUrl = `https://${currentUser}.github.io/${name}/`;
-            let published = false;
-            for (let i = 0; i < 48; i++) {
-              try {
-                const head = await fetch(siteUrl, { method: 'HEAD' });
-                if (head.ok) { published = true; break; }
-              } catch (_) { }
-              await new Promise(r => setTimeout(r, 5000));
-            }
-            if (!published) throw new Error('等待發布逾時，請稍後手動檢查');
-
-            // 6) 成功後打開新分頁 & 顯示連結
-            window.open(siteUrl, '_blank');
-            document.getElementById('newRepoLink').innerHTML =
-              `已創建並發布: <a href="${siteUrl}" target="_blank">${siteUrl}</a>`;
-
-            alert('禮物網站建立並發布成功！');
-
-            // 7) 重置表單 & 重新載入列表
-            document.getElementById('repoName').value = '';
-            document.getElementById('pageTitle').value = '';
-            document.getElementById('pdfUrl').value = '';
-            previewImg.style.display = 'none';
-            uploadedCoverFile = null;
-            await loadRepos();
-
-          } catch (e) {
-            alert('錯誤：' + e.message);
-          } finally {
-            btn.innerHTML = '創建';
-            btn.disabled = false;
-          }
+            const head = await fetch(siteUrl, { method: 'HEAD' });
+            if (head.ok) { published = true; break; }
+          } catch (_) { }
+          await new Promise(r => setTimeout(r, 5000));
         }
+        if (!published) throw new Error('等待發布逾時，請稍後手動檢查');
 
-        // upload
-        async function uploadFile(repo, path, content, isB64 = false) {
-          const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`;
-          const headers = { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' };
-          let sha;
-          try { const g = await fetch(url, { headers }); if (g.ok) sha = (await g.json()).sha; } catch { }
-          const body = { message: `Add ${path}`, content: isB64 ? content : toBase64(content) };
-          if (sha) body.sha = sha;
-          const r = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
-          if (!r.ok) throw new Error((await r.json()).message || `上傳${path}失敗`);
-          await new Promise(r => setTimeout(r, 500));
-        }
+        // 6) 成功後打開新分頁 & 顯示連結
+        window.open(siteUrl, '_blank');
+        document.getElementById('newRepoLink').innerHTML =
+          `已創建並發布: <a href="${siteUrl}" target="_blank">${siteUrl}</a>`;
 
-        // rename/delete/openSite unchanged...
-        function openRenameModal(n, d) { renameTarget = n; document.getElementById('newRepoName').value = n; document.getElementById('newRepoDescription').value = d; document.getElementById('renameModal').classList.add('show'); }
-        function closeRenameModal() { document.getElementById('renameModal').classList.remove('show'); }
-        async function confirmRename() {
-          const newName = document.getElementById('newRepoName').value.trim();
-          const newDesc = document.getElementById('newRepoDescription').value.trim();
-          if (!newName) { alert('新名稱不可為空'); return; }
-          try {
-            const res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
-              method: 'PATCH',
-              headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: newName, description: newDesc })
-            });
-            if (!res.ok) throw new Error('重新命名失敗');
-            alert('已重新命名');
-            closeRenameModal();
-            await loadRepos();
-          } catch (e) { alert('錯誤：' + e.message); }
-        }
+        alert('禮物網站建立並發布成功！');
 
-        async function deleteRepo(name) {
-          if (!confirm(`確定刪除 ${name}？此操作無法還原！`)) return;
-          try {
-            const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}`, {
-              method: 'DELETE', headers: { 'Authorization': `token ${currentToken}` }
-            });
-            if (!res.ok) throw new Error('刪除失敗');
-            alert('已刪除');
-            await loadRepos();
-          } catch (e) { alert('錯誤：' + e.message); }
-        }
+        // 7) 重置表單 & 重新載入列表
+        document.getElementById('repoName').value = '';
+        document.getElementById('pageTitle').value = '';
+        document.getElementById('pdfUrl').value = '';
+        previewImg.style.display = 'none';
+        uploadedCoverFile = null;
+        await loadRepos();
 
-        async function enablePages(name) {
-          try {
-            const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
-              method: 'POST',
-              headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ source: { branch: 'main', path: '/' } })
-            });
-            if (!res.ok) throw new Error('啟用失敗');
-            alert('Pages 已啟用');
-            await loadRepos();
-          } catch (e) { alert('錯誤：' + e.message); }
-        }
+      } catch (e) {
+        alert('錯誤：' + e.message);
+      } finally {
+        btn.innerHTML = '創建';
+        btn.disabled = false;
+      }
+    }
 
-        function openSite(url) { window.open(url, '_blank'); }
+    // upload
+    async function uploadFile(repo, path, content, isB64 = false) {
+      const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`;
+      const headers = { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' };
+      let sha;
+      try { const g = await fetch(url, { headers }); if (g.ok) sha = (await g.json()).sha; } catch { }
+      const body = { message: `Add ${path}`, content: isB64 ? content : toBase64(content) };
+      if (sha) body.sha = sha;
+      const r = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error((await r.json()).message || `上傳${path}失敗`);
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    // rename/delete/openSite unchanged...
+    function openRenameModal(n, d) { renameTarget = n; document.getElementById('newRepoName').value = n; document.getElementById('newRepoDescription').value = d; document.getElementById('renameModal').classList.add('show'); }
+    function closeRenameModal() { document.getElementById('renameModal').classList.remove('show'); }
+    async function confirmRename() {
+      const newName = document.getElementById('newRepoName').value.trim();
+      const newDesc = document.getElementById('newRepoDescription').value.trim();
+      if (!newName) { alert('新名稱不可為空'); return; }
+      try {
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName, description: newDesc })
+        });
+        if (!res.ok) throw new Error('重新命名失敗');
+        alert('已重新命名');
+        closeRenameModal();
+        await loadRepos();
+      } catch (e) { alert('錯誤：' + e.message); }
+    }
+
+    async function deleteRepo(name) {
+      if (!confirm(`確定刪除 ${name}？此操作無法還原！`)) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}`, {
+          method: 'DELETE', headers: { 'Authorization': `token ${currentToken}` }
+        });
+        if (!res.ok) throw new Error('刪除失敗');
+        alert('已刪除');
+        await loadRepos();
+      } catch (e) { alert('錯誤：' + e.message); }
+    }
+
+    async function enablePages(name) {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
+          method: 'POST',
+          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: { branch: 'main', path: '/' } })
+        });
+        if (!res.ok) throw new Error('啟用失敗');
+        alert('Pages 已啟用');
+        await loadRepos();
+      } catch (e) { alert('錯誤：' + e.message); }
+    }
+
+    function openSite(url) { window.open(url, '_blank'); }
   </script>
 </body>
 
