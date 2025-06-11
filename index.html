@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>🎁 GitHub 禮物網站管理</title>
+  <title>🎁 書籍網站管理</title>
   <style>
     /* Reset 和全站樣式 */
     * {
@@ -260,8 +260,7 @@
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1>🎁 GitHub 禮物網站管理</h1>
-      <p>一次性建立含範本與資源的新 Repo</p>
+      <h1>書籍網站管理</h1>
     </div>
 
     <div class="main-content">
@@ -285,17 +284,17 @@
         <h2>➕ 新增禮物網站</h2>
 
         <div class="form-group">
-          <label>Repo 名稱</label>
-          <input id="repoName" type="text" placeholder="例如：my-gift-site">
+          <label>網址名稱</label>
+          <input id="repoName" type="text" placeholder="例如：https://seniorpowerinc.github.io/(網址名稱)">
         </div>
 
         <div class="form-group">
-          <label>網站名稱 (pageTitle)</label>
-          <input id="pageTitle" type="text" placeholder="例如：我的禮物網站">
+          <label>網站頁面名稱 (pageTitle)</label>
+          <input id="pageTitle" type="text" placeholder="例如：書名等等">
         </div>
 
         <div class="form-group">
-          <label>PDF 分享連結</label>
+          <label>PDF連結</label>
           <input id="pdfUrl" type="url" placeholder="https://drive.google.com/...">
         </div>
 
@@ -317,7 +316,7 @@
 
       <!-- Repo 列表 -->
       <div id="reposList" class="section hidden">
-        <h2>📦 我的禮物網站</h2>
+        <h2>📦 網站列表</h2>
         <div id="reposGrid" class="repos-grid"></div>
       </div>
     </div>
