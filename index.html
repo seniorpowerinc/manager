@@ -482,31 +482,57 @@
     }
 
 
-    function displayRepos(repos) {
+    async function displayRepos(repos) {
       const grid = document.getElementById('reposGrid');
       grid.innerHTML = '';
-      repos.forEach(r => {
+
+      for (const r of repos) {
+        // 1. 抓取並解析 data.json
+        let config = {};
+        try {
+          const res = await fetch(
+            `https://api.github.com/repos/${r.full_name}/contents/data.json`,
+            { headers: { 'Authorization': `token ${currentToken}` } }
+          );
+          const meta = await res.json();
+          config = JSON.parse(decodeURIComponent(escape(atob(meta.content))));
+        } catch {
+          // 如果讀不到 data.json，就用預設值
+          config = { pageTitle: r.name, pdf: '', coverImage: '' };
+        }
+
+        // 2. 建立卡片
         const url = `https://${r.owner.login}.github.io/${r.name}/`;
         const card = document.createElement('div');
         card.className = 'repo-card';
         card.innerHTML = `
-        <div class="repo-header">
-          <div class="repo-name">${r.name}</div>
-          <div class="status-indicator" id="status-${r.name}">
-            ${r.has_pages ? '✅ 已發布' : '🔴 未發布'}
-          </div>
+      <div class="repo-header">
+        <div class="repo-name">${r.name}</div>
+        <div class="status-indicator ${r.has_pages ? 'status-active' : 'status-inactive'}">
+          ${r.has_pages ? '✅ 已發布' : '🔴 未發布'}
         </div>
-        <div class="repo-url"><a href="${url}" target="_blank">${url}</a></div>
-        <div class="repo-actions">
-          <button class="btn" onclick="openSite('${url}')">訪問</button>
-          <button class="btn warning" onclick="openEditModal('${r.name}')">✏️ 編輯設定</button>
-<button class="btn" onclick="openCoverModal('${r.name}','${config.coverImage || ''}')">🖼️ 更換封面</button>
-          <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
-        </div>
-      `;
+      </div>
+      <div class="repo-url">
+        <a href="${url}" target="_blank">${url}</a>
+      </div>
+      <div class="repo-url">
+        <strong>網站名稱：</strong> ${config.pageTitle || '—'}
+      </div>
+      <div class="repo-url">
+        <strong>PDF：</strong> ${config.pdf ? `<a href="${config.pdf}" target="_blank">連結</a>` : '—'}
+      </div>
+      <div class="repo-actions">
+        <button class="btn" onclick="openSite('${url}')">訪問</button>
+        <button class="btn warning" onclick="openEditModal('${r.name}')">✏️ 編輯設定</button>
+        <button class="btn" onclick="openCoverModal('${r.name}','${config.coverImage || ''}')">🖼️ 更換封面</button>
+        <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
+      </div>
+    `;
         grid.appendChild(card);
+
+        // 3. 檢查最後一次 Actions Run 狀態
         checkWorkflow(r.name);
-      });
+      }
     }
     // dispatch workflow
     async function dispatchWorkflow(repo) {
