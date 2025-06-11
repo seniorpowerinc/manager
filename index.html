@@ -554,26 +554,52 @@
     }
 
     // 通用上傳工具
-    async function uploadFile(repo, path, content, isB64 = false) {
-      const res = await fetch(
-        `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `token ${currentToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: `Add ${path}`,
-          content: isB64 ? content : toBase64(content)
-        })
-      });
-      if (!res.ok) {
-        const e = await res.json();
-        throw new Error(e.message || `上傳 ${path} 失敗`);
-      }
-      // 防速率限制
-      await new Promise(r => setTimeout(r, 500));
+    // 通用上傳工具：自動處理新增或更新（含 sha）
+async function uploadFile(repo, path, content, isBase64 = false) {
+  const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`;
+  const headers = {
+    'Authorization': `token ${currentToken}`,
+    'Content-Type':  'application/json'
+  };
+
+  // 1. 嘗試讀取既有檔案，取得 sha
+  let sha;
+  try {
+    const getRes = await fetch(url, { headers });
+    if (getRes.ok) {
+      const meta = await getRes.json();
+      sha = meta.sha;
     }
+    // 如果 404 就不理它，sha 保持 undefined
+  } catch (e) {
+    // network error 才會進這裡
+  }
+
+  // 2. 組 body
+  const body = {
+    message: `Add or update ${path}`,
+    content: isBase64 ? content : toBase64(content)
+  };
+  if (sha) {
+    body.sha = sha;  // 更新時需要
+  }
+
+  // 3. 發 PUT 請求
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || `Failed to upload ${path}`);
+  }
+
+  // 4. 防速率限制
+  await new Promise(r => setTimeout(r, 500));
+}
+
 
     // 重新命名
     function openRenameModal(name, desc) {
