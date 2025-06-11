@@ -1,280 +1,143 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>🎁 GitHub 禮物網站管理</title>
   <style>
-    /* ——— 全站 CSS，含 Reset、按鈕、卡片、Modal、響應式等 ——— */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    /* Reset & 全站樣式 */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      min-height: 100vh;
-      padding: 20px;
-      color: #333;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      min-height: 100vh; padding: 20px; color: #333;
     }
-
     .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 15px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      max-width: 1200px; margin: 0 auto;
+      background: rgba(255,255,255,0.95);
+      border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
       overflow: hidden;
     }
-
     .header {
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
-      text-align: center;
-      padding: 30px;
-      color: #fff;
+      background: linear-gradient(135deg,#4facfe,#00f2fe);
+      text-align: center; padding: 30px; color: #fff;
     }
-
-    .header h1 {
-      font-size: 2.5rem;
-      font-weight: 300;
-    }
-
-    .header p {
-      opacity: .9;
-      margin-top: 8px;
-    }
+    .header h1 { font-size: 2.5rem; font-weight: 300; }
+    .header p { opacity: .9; margin-top: 8px; }
 
     .btn {
-      display: inline-block;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 25px;
-      font-weight: 600;
-      cursor: pointer;
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
-      color: #fff;
-      transition: transform .2s, box-shadow .2s;
+      display: inline-block; padding: 12px 24px; border: none;
+      border-radius: 25px; font-weight: 600; cursor: pointer;
+      background: linear-gradient(135deg,#4facfe,#00f2fe);
+      color: #fff; transition: transform .2s, box-shadow .2s;
+      text-align: center;
     }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, .15);
-    }
-
-    .btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .btn.success {
-      background: linear-gradient(135deg, #56ab2f, #a8e6cf);
-    }
-
-    .btn.warning {
-      background: linear-gradient(135deg, #f093fb, #f5576c);
-    }
-
-    .btn.danger {
-      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.15); }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .btn.success { background: linear-gradient(135deg,#56ab2f,#a8e6cf); }
+    .btn.warning { background: linear-gradient(135deg,#f093fb,#f5576c); }
+    .btn.danger  { background: linear-gradient(135deg,#ff6b6b,#ee5a52); }
 
     .section {
-      background: linear-gradient(135deg, #ffecd2, #fcb69f);
-      margin: 20px;
-      padding: 30px;
-      border-radius: 15px;
+      background: linear-gradient(135deg,#ffecd2,#fcb69f);
+      margin: 20px; padding: 30px; border-radius: 15px;
     }
-
     .section.authenticated {
-      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      background: linear-gradient(135deg,#a8edea,#fed6e3);
     }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
+    .form-group { margin-bottom: 16px; }
     .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
+      display: block; margin-bottom: 6px; font-weight: 600;
     }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-size: 1rem;
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 10px; border: 2px solid #ddd;
+      border-radius: 8px; font-size: 1rem;
       transition: border-color .2s;
     }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: #4facfe;
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none; border-color: #4facfe;
     }
 
     .repos-grid {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      display: grid; gap: 20px;
+      grid-template-columns: repeat(auto-fill,minmax(300px,1fr));
       margin-top: 20px;
     }
-
     .repo-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, .1);
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.1);
       transition: transform .2s, box-shadow .2s;
       border: 2px solid transparent;
     }
-
     .repo-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 16px 32px rgba(0, 0, 0, .15);
+      box-shadow: 0 16px 32px rgba(0,0,0,.15);
       border-color: #4facfe;
     }
-
     .repo-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 12px;
     }
-
-    .repo-name {
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-
+    .repo-name { font-size: 1.2rem; font-weight: 600; }
     .status-indicator {
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: .85rem;
-      font-weight: 600;
+      padding: 4px 10px; border-radius: 20px; font-size: .85rem; font-weight: 600;
     }
-
-    .status-active {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-inactive {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .repo-url {
-      margin-bottom: 8px;
-      font-size: .9rem;
-      word-break: break-all;
-    }
-
-    .repo-url a {
-      color: #4facfe;
-      text-decoration: none;
-    }
-
-    .repo-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    .status-active   { background: #d4edda; color: #155724; }
+    .status-inactive { background: #f8d7da; color: #721c24; }
+    .repo-url { margin-bottom: 8px; font-size: .9rem; word-break: break-all; }
+    .repo-url a { color: #4facfe; text-decoration: none; }
+    .repo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
     .loading {
-      width: 18px;
-      height: 18px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #4facfe;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: 8px;
+      width: 18px; height: 18px; border: 3px solid #f3f3f3;
+      border-top: 3px solid #4facfe; border-radius: 50%;
+      animation: spin 1s linear infinite; display: inline-block;
+      vertical-align: middle; margin-left: 8px;
     }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, .6);
-      justify-content: center;
-      align-items: center;
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,.6); justify-content: center; align-items: center;
       z-index: 1000;
     }
-
-    .modal.show {
-      display: flex;
-    }
-
+    .modal.show { display: flex; }
     .modal-content {
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      max-width: 400px;
-      width: 90%;
-      position: relative;
+      background: #fff; padding: 24px; border-radius: 12px;
+      max-width: 400px; width: 90%; position: relative;
     }
-
     .modal-content .close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      cursor: pointer;
-      font-size: 1.4rem;
-      color: #666;
+      position: absolute; top: 12px; right: 12px; cursor: pointer;
+      font-size: 1.4rem; color: #666;
     }
+    .modal-content .close:hover { color: #000; }
 
-    .modal-content .close:hover {
-      color: #000;
-    }
-
-    @media(max-width:600px) {
-      .repos-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .header h1 {
-        font-size: 2rem;
-      }
+    @media (max-width: 600px) {
+      .repos-grid { grid-template-columns: 1fr; }
+      .header h1 { font-size: 2rem; }
     }
   </style>
 </head>
-
 <body>
   <div class="container">
     <!-- Header -->
     <div class="header">
       <h1>🎁 GitHub 禮物網站管理</h1>
+      <p>一次性建立含範本與資源的新 Repo</p>
     </div>
 
-    <!-- Main -->
     <div class="main-content">
       <!-- 認證 -->
       <div id="authSection" class="section">
         <h2>🔐 GitHub 認證</h2>
         <p>請使用 PAT (Classic)，授權：repo、delete_repo、user</p>
-        <div style="margin-top:16px;">
-          <input id="tokenInput" type="password" placeholder="貼上 Token" />
-          <button id="loginBtn" class="btn" style="margin-left:8px;">登入</button>
+        <div>
+          <input id="tokenInput" type="password" placeholder="貼上 Personal Access Token (Classic)">
+          <button id="loginBtn" class="btn">登入</button>
         </div>
-        <div id="userInfo" class="section hidden">
+        <div id="userInfo" class="section hidden" style="display:flex;justify-content:space-between;align-items:center;">
           <span>已登入：<strong id="username"></strong></span>
-          <button class="btn danger" onclick="logout()" style="float:right;">登出</button>
+          <button class="btn danger" onclick="logout()">登出</button>
         </div>
       </div>
 
@@ -283,20 +146,20 @@
         <h2>➕ 新增禮物網站</h2>
         <div class="form-group">
           <label>Repo 名稱</label>
-          <input id="repoName" type="text" placeholder="例如 my-gift-site">
+          <input id="repoName" type="text" placeholder="例如：my-gift-site">
         </div>
         <div class="form-group">
           <label>描述（可選）</label>
           <textarea id="repoDescription" rows="2" placeholder="網站描述…"></textarea>
         </div>
 
-        <!-- 拖曳 / 點擊 上傳 封面圖 -->
-        <div id="dropZone" class="form-group"
-          style="border:2px dashed #aaa;padding:20px;text-align:center;border-radius:8px;">
+        <!-- 拖曳／點擊 上傳 封面圖 -->
+        <div id="dropZone" class="form-group" style="border:2px dashed #aaa;padding:20px;text-align:center;border-radius:8px;">
           <p>拖曳封面圖到此，或<span style="color:#4facfe;cursor:pointer;" onclick="fileInput.click()">點擊選擇</span></p>
-          <input id="fileInput" type="file" accept="image/*" style="display:none" />
-          <img id="previewImg" src="#" alt="預覽" style="max-width:100%;margin-top:10px;display:none;border-radius:8px;
-                      box-shadow:0 5px 15px rgba(0,0,0,0.1);" />
+          <input id="fileInput" type="file" accept="image/*" style="display:none">
+          <img id="previewImg" src="#" alt="預覽"
+               style="max-width:100%;margin-top:10px;display:none;
+                      border-radius:8px;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
         </div>
 
         <div class="form-group">
@@ -315,14 +178,14 @@
     </div>
   </div>
 
-  <!-- 重命名 Modal -->
+  <!-- 重新命名 Modal -->
   <div id="renameModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeRenameModal()">&times;</span>
       <h3>重新命名 Repo</h3>
       <div class="form-group">
         <label>新名稱</label>
-        <input id="newRepoName" type="text" />
+        <input id="newRepoName" type="text">
       </div>
       <div class="form-group">
         <label>新描述</label>
@@ -334,24 +197,32 @@
   </div>
 
   <script>
-    // —— 全域變數 —— 
-    let currentToken = '', currentUser = '', renameTarget = '', uploadedCoverFile = null;
+    // 範本倉庫設定，請先在 GitHub 上建立此 template repo
+    const TEMPLATE_OWNER = 'seniorpowerinc';
+    const TEMPLATE_REPO  = 'gift-template';
 
-    // —— 拖曳 & 預覽 —— 
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
+    let currentToken = '';
+    let currentUser  = '';
+    let renameTarget = '';
+    let uploadedCoverFile = null;
+
+    // 拖曳 & 預覽
+    const dropZone   = document.getElementById('dropZone');
+    const fileInput  = document.getElementById('fileInput');
     const previewImg = document.getElementById('previewImg');
     dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', e => handleFiles(e.target.files));
-    ['dragenter', 'dragover'].forEach(evt =>
-      dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.style.borderColor = '#4facfe'; }));
-    ['dragleave', 'drop'].forEach(evt =>
-      dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.style.borderColor = '#aaa'; }));
+    ['dragenter','dragover'].forEach(evt =>
+      dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.style.borderColor = '#4facfe'; })
+    );
+    ['dragleave','drop'].forEach(evt =>
+      dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.style.borderColor = '#aaa'; })
+    );
     dropZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
     function handleFiles(files) {
       if (!files.length) return;
       const file = files[0];
-      if (!file.type.startsWith('images/')) { alert('請上傳圖片檔'); return; }
+      if (!file.type.startsWith('image/')) { alert('請上傳圖片檔'); return; }
       uploadedCoverFile = file;
       const reader = new FileReader();
       reader.onload = evt => {
@@ -361,48 +232,56 @@
       reader.readAsDataURL(file);
     }
 
-    // —— authenticate —— 
+    // 認證
     document.getElementById('loginBtn').onclick = authenticate;
     async function authenticate() {
       const token = document.getElementById('tokenInput').value.trim();
       if (!token) { alert('請輸入 Token'); return; }
       const btn = document.getElementById('loginBtn');
-      btn.innerHTML = '驗證中…<span class="loading"></span>'; btn.disabled = true;
+      btn.innerHTML = '驗證中…<span class="loading"></span>';
+      btn.disabled = true;
       try {
-        let res = await fetch('https://api.github.com/user', {
+        const res = await fetch('https://api.github.com/user', {
           headers: { 'Authorization': `token ${token}` }
         });
         if (!res.ok) throw new Error('Token 無效或權限不足');
         const user = await res.json();
-        currentToken = token; currentUser = user.login;
-        // UI 切換
+        currentToken = token;
+        currentUser  = user.login;
+        // 切換 UI
         document.getElementById('authSection').classList.add('authenticated');
         document.getElementById('username').textContent = user.login;
-        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'flex';
         document.getElementById('tokenInput').style.display = 'none';
         btn.style.display = 'none';
         document.getElementById('addRepoSection').classList.remove('hidden');
         document.getElementById('reposList').classList.remove('hidden');
         await loadRepos();
-      } catch (e) { alert('認證失敗：' + e.message); }
-      finally { btn.innerHTML = '登入'; btn.disabled = false; }
+      } catch (e) {
+        alert('認證失敗：' + e.message);
+      } finally {
+        btn.innerHTML = '登入';
+        btn.disabled = false;
+      }
     }
 
-    // —— logout —— 
-    function logout() { location.reload(); }
+    // 登出
+    function logout() {
+      location.reload();
+    }
 
-    // —— loadRepos —— 
+    // 載入並顯示 Repos
     async function loadRepos() {
       const grid = document.getElementById('reposGrid');
       grid.innerHTML = '';
       try {
-        let res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+        const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
           headers: { 'Authorization': `token ${currentToken}` }
         });
         if (!res.ok) throw new Error('無法取得 Repos');
         const list = await res.json(), filtered = [];
         for (const r of list) {
-          let c = await fetch(`https://api.github.com/repos/${r.full_name}/contents/data.json`, {
+          const c = await fetch(`https://api.github.com/repos/${r.full_name}/contents/data.json`, {
             headers: { 'Authorization': `token ${currentToken}` }
           });
           if (c.ok) filtered.push(r);
@@ -412,244 +291,203 @@
           return;
         }
         displayRepos(filtered);
-      } catch (e) { alert('載入失敗：' + e.message); }
+      } catch (e) {
+        alert('載入失敗：' + e.message);
+      }
     }
 
-    // —— displayRepos —— 
     function displayRepos(repos) {
       const grid = document.getElementById('reposGrid');
       repos.forEach(r => {
         const url = `https://${r.owner.login}.github.io/${r.name}/`;
-        const card = document.createElement('div'); card.className = 'repo-card';
+        const card = document.createElement('div');
+        card.className = 'repo-card';
         card.innerHTML = `
           <div class="repo-header">
             <div class="repo-name">${r.name}</div>
-            <div class="status-indicator ${r.has_pages ? 'status-active' : 'status-inactive'}">
-              ${r.has_pages ? '已發布' : '未發布'}
+            <div class="status-indicator ${r.has_pages?'status-active':'status-inactive'}">
+              ${r.has_pages?'已發布':'未發布'}
             </div>
           </div>
           <div class="repo-url"><a href="${url}" target="_blank">${url}</a></div>
-          <div class="repo-url">描述：${r.description || '—'}</div>
+          <div class="repo-url">描述：${r.description||'—'}</div>
           <div class="repo-url">更新：${new Date(r.updated_at).toLocaleString('zh-TW')}</div>
           <div class="repo-actions">
             <button class="btn" onclick="openSite('${url}')">訪問</button>
-            <button class="btn warning"
-                    onclick="openRenameModal('${r.name}','${r.description || ''}')">
-              重新命名
-            </button>
-            <button class="btn"
-                    onclick="enablePages('${r.name}')"
-                    ${r.has_pages ? 'style="display:none"' : ''}>
-              啟用 Pages
-            </button>
+            <button class="btn warning" onclick="openRenameModal('${r.name}','${r.description||''}')">重新命名</button>
+            <button class="btn" onclick="enablePages('${r.name}')" ${r.has_pages?'style="display:none"':''}>啟用 Pages</button>
             <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
           </div>`;
         grid.appendChild(card);
       });
     }
 
-    // —— createRepo —— 
+    // 建立新 Repo (從範本複製)
     document.getElementById('createRepoBtn').onclick = createRepo;
     async function createRepo() {
-      const name = document.getElementById('repoName').value.trim();
-      if (!name) { alert('請輸入名稱'); return; }
-      if (!uploadedCoverFile) { alert('請上傳封面圖'); return; }
-      const desc = document.getElementById('repoDescription').value.trim() || `${name} 禮物網站`;
+      const name    = document.getElementById('repoName').value.trim();
+      const desc    = document.getElementById('repoDescription').value.trim() || `${name} 禮物網站`;
       const pdfLink = document.getElementById('pdfUrl').value.trim();
+      if (!name) { alert('請輸入 Repo 名稱'); return; }
+      if (!uploadedCoverFile) { alert('請上傳封面圖'); return; }
       const btn = document.getElementById('createRepoBtn');
-      btn.innerHTML = '創建中…<span class="loading"></span>'; btn.disabled = true;
-
+      btn.innerHTML = '創建中…<span class="loading"></span>';
+      btn.disabled = true;
       try {
-        // 1. 建 repo
-        let res = await fetch('https://api.github.com/user/repos', {
+        // 1) 從範本建立
+        let res = await fetch(
+          `https://api.github.com/repos/${TEMPLATE_OWNER}/${TEMPLATE_REPO}/generate`, {
           method: 'POST',
-          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description: desc, private: false, auto_init: true })
+          headers: {
+            'Authorization': `token ${currentToken}`,
+            'Accept':      'application/vnd.github.baptiste-preview+json'
+          },
+          body: JSON.stringify({
+            owner:       currentUser,
+            name:        name,
+            description: desc
+          })
         });
-        if (!res.ok) throw new Error((await res.json()).message || '創建失敗');
-        await new Promise(r => setTimeout(r, 2000));
+        if (!res.ok) throw new Error('從範本建立失敗');
+        // 等初始化
+        await new Promise(r => setTimeout(r,2000));
 
-        // 2. 準備 Base64
+        // 2) 上傳封面圖
         const imgBase64 = await new Promise(r => {
           const fr = new FileReader();
-          fr.onload = () => r(fr.result.split(',')[1]);
+          fr.onload = ()=> r(fr.result.split(',')[1]);
           fr.readAsDataURL(uploadedCoverFile);
         });
+        await uploadFile(name, `images/${uploadedCoverFile.name}`, imgBase64, true);
 
-        // 3. 上傳 template 檔 到 temp/
-        // 3.1 temp/.gitkeep
-        await uploadFile(name, 'temp/.gitkeep', '');
-        // 3.2 temp/index.html（使用你現有範本內容，以下示例引用範本 :contentReference[oaicite:0]{index=0}）
-        const tpl =`<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <title id="pageTitle">GIFT</title>
-  <style>
-    /* 全域樣式 */
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden;
-      background: linear-gradient(135deg, #e0f7fa, #bbdefb, #c5cae9);
-      font-family: Arial, sans-serif; }
-    .main-content { display:flex; flex-direction:column; align-items:center;
-      justify-content:center; width:100%; max-width:800px; margin:0 auto; padding:40px 0; }
-    .cover-image { width:90vw; max-width:500px; border-radius:10px;
-      box-shadow:0 8px 25px rgba(0,0,0,0.2); transition:transform .5s, opacity .5s;
-      cursor:pointer; }
-    .cover-image:hover { transform:scale(1.05); }
-    .lift-open { transform:scale(1.8); opacity:0; }
-    .open-button { position:absolute; bottom:60px; left:50%; transform:translateX(-50%);
-      background:linear-gradient(145deg,#63BE7B,#FFEF9C); color:black; border:none;
-      padding:12px 30px; font-size:34px; font-weight:bold; border-radius:50px;
-      box-shadow:0 5px 15px rgba(255,94,98,0.4); cursor:pointer; z-index:3; }
-    @media(max-width:768px){ .open-button{font-size:28px;padding:10px 24px;bottom:40px;} }
-    /* PDF 容器（90% 大小） */
-    #pdf-container { display:none; position:fixed; top:5%; left:5%;
-      width:90%; height:90%; background:#fff; overflow:hidden;
-      box-shadow:0 4px 20px rgba(0,0,0,0.2); border-radius:8px; }
-    #pdf-frame { width:100%; height:100%; border:none; }
-    /* Confetti canvas */
-    #confetti-canvas { position:fixed; top:0; left:0; width:100%; height:100%;
-      pointer-events:none; z-index:1001; }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  </head>
+        // 3) 更新 data.json
+        const dataJson = {
+          pageTitle: name,
+          lang:      'zh-TW',
+          pdf:       pdfLink,
+          coverImage:`images/${uploadedCoverFile.name}`
+        };
+        await uploadFile(name, 'data.json', btoa(JSON.stringify(dataJson,null,2)), true);
 
-  <body>
-    <div class="main-content">
-      <div style="position:relative;">
-        <img id="coverImage" class="cover-image" src="" alt="封面">
-        <button id="openButton" class="open-button">閱讀</button>
-      </div>
-    </div>
+        // 4) 啟用 Pages
+        await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
+          method:'POST',
+          headers:{
+            'Authorization': `token ${currentToken}`,
+            'Content-Type':  'application/json'
+          },
+          body: JSON.stringify({ source:{ branch:'main', path:'/' }})
+        });
 
-    <div id="pdf-container">
-      <iframe id="pdf-frame" src="" allow="autoplay; encrypted-media" loading="lazy"></iframe>
-    </div>
-
-    <canvas id="confetti-canvas"></canvas>
-    <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
-    <script>
-    let windowPdfUrl = '';
-    // 從 data.json 載入設定
-    fetch('data.json?bust=' + Date.now())
-      .then(res => res.json())
-      .then(d => {
-        // 設定語系與標題
-        document.documentElement.lang = d.lang || 'zh-TW';
-        document.getElementById('pageTitle').textContent = d.pageTitle || 'GIFT';
-        document.title = d.pageTitle || document.title;
-        // 封面圖片
-        document.getElementById('coverImage').src = d.coverImage || 'SPI.png';
-        // 轉換 view URL 為 preview URL
-        if (d.pdf) {
-          windowPdfUrl = d.pdf.replace('/view?usp=sharing', '/preview');
-        }
-        // iframe 預載
-        document.getElementById('pdf-frame').src = windowPdfUrl;
-      })
-      .catch(console.error);
-
-    const btn = document.getElementById('openButton');
-    const img = document.getElementById('coverImage');
-    const pdfContainer = document.getElementById('pdf-container');
-    const canvas = document.getElementById('confetti-canvas');
-    const myConfetti = confetti.create(canvas, { resize:true, useWorker:false });
-    const sound = document.getElementById('celebration-sound');
-
-    function openGift() {
-      img.classList.add('lift-open');
-      btn.style.display = 'none';
-      setTimeout(() => {
-        pdfContainer.style.display = 'block';
-        try { sound.play(); myConfetti({ particleCount:150, spread:120, origin:{ y:0.6 } }); }
-        catch(e) { console.log('confetti suppressed'); }
-      }, 300);
-    }
-    btn.addEventListener('click', e => { e.stopPropagation(); openGift(); });
-    img.addEventListener('click', openGift);
-    img.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') openGift(); });
-    </script>
-  </body>
-
-</html>
-`;
-await uploadFile(name,'temp/index.html',btoa(unescape(encodeURIComponent(tpl))),true);
-
-// 3.3 temp/images/SPI.png & open.mp3（示例 Base64，請替換為實際編碼）
-await uploadFile(name,'temp/images/SPI.png','<<<BASE64_SPI>>>',true);
-  await uploadFile(name,'temp/images/open.mp3','<<<BASE64_OPEN_MP3>>>',true);
-
-    // 4. 上傳使用者封面圖到 images/
-    await uploadFile(name,`images/${uploadedCoverFile.name}`,imgBase64,true);
-
-    // 5. data.json
-    const dataJson={pageTitle:name,lang:'zh-TW',pdf:pdfLink,coverImage:`images/${uploadedCoverFile.name}`};
-    await uploadFile(name,'data.json',btoa(JSON.stringify(dataJson,null,2)),true);
-
-    // 6. workflow
-    const wf=`name:Deploy to GitHub Pages
-    on:[push]
-    permissions:{pages:write}
-    jobs:
-    deploy:
-    runs-on:ubuntu-latest
-    steps:
-    - uses:actions/checkout@v4
-    - uses:actions/configure-pages@v3
-    - uses:actions/upload-pages-artifact@v3{with:{path:'.'}}
-    - uses:actions/deploy-pages@v4`;
-    await uploadFile(name,'.github/workflows/deploy.yml',btoa(wf),true);
-
-    // 7. 啟用 Pages
-    await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`,{
-    method:'POST',
-    headers:{'Authorization':`token ${currentToken}`,'Content-Type':'application/json'},
-    body:JSON.stringify({source:{branch:'main',path:'/'}})
-    });
-
-    alert('建立完成！');
-    // 重置表單
-    document.getElementById('repoName').value='';
-    document.getElementById('repoDescription').value='';
-    document.getElementById('pdfUrl').value='';
-    previewImg.style.display='none';
-    uploadedCoverFile=null;
-    await loadRepos();
-    }catch(e){alert('錯誤：'+e.message);}
-    finally{btn.innerHTML='創建';btn.disabled=false;}
+        alert('禮物網站建立完成！');
+        // 重置
+        document.getElementById('repoName').value='';
+        document.getElementById('repoDescription').value='';
+        document.getElementById('pdfUrl').value='';
+        previewImg.style.display='none';
+        uploadedCoverFile=null;
+        await loadRepos();
+      } catch(e) {
+        alert('錯誤：'+ e.message);
+      } finally {
+        btn.innerHTML='創建';
+        btn.disabled=false;
+      }
     }
 
-    // —— uploadFile ——
+    // 通用上傳工具
     async function uploadFile(repo,path,content,isB64=false){
-    const res=await fetch(`https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`,{
-    method:'PUT',
-    headers:{'Authorization':`token ${currentToken}`,'Content-Type':'application/json'},
-    body:JSON.stringify({
-    message:`Add ${path}`,
-    content:isB64?content:btoa(content)
-    })
-    });
-    if(!res.ok){
-    const err=await res.json();
-    throw new Error(err.message||`上傳 ${path} 失敗`);
-    }
-    await new Promise(r=>setTimeout(r,500));
+      const res = await fetch(
+        `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`, {
+        method:'PUT',
+        headers:{
+          'Authorization': `token ${currentToken}`,
+          'Content-Type':  'application/json'
+        },
+        body: JSON.stringify({
+          message: `Add ${path}`,
+          content: isB64 ? content : btoa(content)
+        })
+      });
+      if (!res.ok) {
+        const e = await res.json();
+        throw new Error(e.message || `上傳 ${path} 失敗`);
+      }
+      // 防速率限制
+      await new Promise(r=>setTimeout(r,500));
     }
 
-    // —— 其餘功能 —— rename / delete / enablePages / openSite 同前文示例
-    function
-    openRenameModal(n,d){renameTarget=n;document.getElementById('newRepoName').value=n;document.getElementById('newRepoDescription').value=d;document.getElementById('renameModal').classList.add('show');}
-    function closeRenameModal(){document.getElementById('renameModal').classList.remove('show');}
-    async function confirmRename(){/*…*/}
-    async function deleteRepo(n){/*…*/}
-    async function enablePages(n){/*…*/}
-    function openSite(u){window.open(u,'_blank');}
-    </script>
-    </body>
+    // 重新命名
+    function openRenameModal(name,desc){
+      renameTarget = name;
+      document.getElementById('newRepoName').value = name;
+      document.getElementById('newRepoDescription').value = desc;
+      document.getElementById('renameModal').classList.add('show');
+    }
+    function closeRenameModal(){
+      document.getElementById('renameModal').classList.remove('show');
+    }
+    async function confirmRename(){
+      const newName = document.getElementById('newRepoName').value.trim();
+      const newDesc = document.getElementById('newRepoDescription').value.trim();
+      if (!newName) { alert('新名稱不可為空'); return; }
+      try {
+        let res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
+          method:'PATCH',
+          headers:{
+            'Authorization': `token ${currentToken}`,
+            'Content-Type':  'application/json'
+          },
+          body: JSON.stringify({ name:newName, description:newDesc })
+        });
+        if (!res.ok) throw new Error('重新命名失敗');
+        alert('已重新命名');
+        closeRenameModal();
+        await loadRepos();
+      } catch(e) {
+        alert('錯誤：'+e.message);
+      }
+    }
 
-    </html>
+    // 刪除
+    async function deleteRepo(name){
+      if(!confirm(`確定刪除 ${name}？此操作無法還原！`)) return;
+      try {
+        let res = await fetch(`https://api.github.com/repos/${currentUser}/${name}`, {
+          method:'DELETE',
+          headers:{ 'Authorization': `token ${currentToken}` }
+        });
+        if(!res.ok) throw new Error('刪除失敗');
+        alert('已刪除');
+        await loadRepos();
+      } catch(e) {
+        alert('錯誤：'+e.message);
+      }
+    }
+
+    // 啟用 Pages (若用 Template Repo generate，通常已啟用)
+    async function enablePages(name){
+      try {
+        let res = await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
+          method:'POST',
+          headers:{
+            'Authorization': `token ${currentToken}`,
+            'Content-Type':  'application/json'
+          },
+          body: JSON.stringify({ source:{ branch:'main', path:'/' }})
+        });
+        if(!res.ok) throw new Error('啟用失敗');
+        alert('Pages 已啟用');
+        await loadRepos();
+      } catch(e) {
+        alert('錯誤：'+e.message);
+      }
+    }
+
+    // 開新分頁
+    function openSite(url){
+      window.open(url,'_blank');
+    }
+  </script>
+</body>
+</html>
