@@ -524,7 +524,8 @@
           pdf: pdfLink,
           coverImage: `images/${uploadedCoverFile.name}`
         };
-        await uploadFile(name, 'data.json', JSON.stringify(dataJson, null, 2), true);
+        const dataB64 = toBase64(JSON.stringify(dataJson, null, 2));
+        await uploadFile(name, 'data.json', dataB64, true);
 
         // 4) 啟用 Pages
         await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
