@@ -399,6 +399,7 @@
         document.getElementById('addRepoSection').classList.remove('hidden');
         document.getElementById('reposList').classList.remove('hidden');
         await loadRepos();
+        startAutoRefresh();
       } catch (e) {
         alert('認證失敗：' + e.message);
       } finally {
@@ -471,24 +472,26 @@
       grid.innerHTML = '';
       repos.forEach(r => {
         const url = `https://${r.owner.login}.github.io/${r.name}/`;
-        const card = document.createElement('div'); card.className = 'repo-card';
+        const card = document.createElement('div');
+        card.className = 'repo-card';
         card.innerHTML = `
-          <div class="repo-header">
-            <div class="repo-name">${r.name}</div>
-            <div class="status-indicator" id="status-${r.name}">檢查中…</div>
+        <div class="repo-header">
+          <div class="repo-name">${r.name}</div>
+          <div class="status-indicator" id="status-${r.name}">
+            ${r.has_pages ? '✅ 已發布' : '🔴 未發布'}
           </div>
-          <div class="repo-url"><a href="${url}" target="_blank">${url}</a></div>
-          <div class="repo-actions">
-            <button class="btn" onclick="openSite('${url}')">訪問</button>
-            <button class="btn warning" onclick="openRenameModal('${r.name}','${r.description || ''}')">重新命名</button>
-            <button class="btn success" onclick="dispatchWorkflow('${r.name}')">發布</button>
-            <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
-          </div>`;
+        </div>
+        <div class="repo-url"><a href="${url}" target="_blank">${url}</a></div>
+        <div class="repo-actions">
+          <button class="btn" onclick="openSite('${url}')">訪問</button>
+          <button class="btn warning" onclick="openRenameModal('${r.name}','')">重新命名</button>
+          <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
+        </div>
+      `;
         grid.appendChild(card);
         checkWorkflow(r.name);
       });
     }
-
     // dispatch workflow
     async function dispatchWorkflow(repo) {
       await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/workflows/deploy.yml/dispatches`, {
@@ -510,18 +513,15 @@
           headers: { 'Authorization': `token ${currentToken}` }
         });
         const d = await res.json(), run = d.workflow_runs[0];
-        if (!run) {
-          badge.textContent = '未發布';
-          badge.className = 'status-indicator status-inactive';
-        } else if (run.conclusion === 'success') {
-          badge.textContent = '✅ 成功';
+        if (run && run.conclusion === 'success') {
+          badge.textContent = '✅ 已發布';
           badge.className = 'status-indicator status-active';
         } else {
-          badge.textContent = '❌ 失敗';
+          badge.textContent = '🔴 未發布';
           badge.className = 'status-indicator status-inactive';
         }
       } catch {
-        badge.textContent = '未知';
+        badge.textContent = '❓ 狀態未知';
         badge.className = 'status-indicator status-inactive';
       }
     }
@@ -680,6 +680,14 @@
     }
 
     function openSite(url) { window.open(url, '_blank'); }
+
+    function startAutoRefresh() {
+      setInterval(() => {
+        if (currentToken) loadRepos();
+      }, 60000); // 60000 ms = 60 秒
+    }
+
+
   </script>
 </body>
 
