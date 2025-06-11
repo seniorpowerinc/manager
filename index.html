@@ -483,29 +483,29 @@
 
 
     async function displayRepos(repos) {
-      const grid = document.getElementById('reposGrid');
-      grid.innerHTML = '';
+  const grid = document.getElementById('reposGrid');
+  grid.innerHTML = '';
 
-      for (const r of repos) {
-        // 1. 抓取並解析 data.json
-        let config = {};
-        try {
-          const res = await fetch(
-            `https://api.github.com/repos/${r.full_name}/contents/data.json`,
-            { headers: { 'Authorization': `token ${currentToken}` } }
-          );
-          const meta = await res.json();
-          config = JSON.parse(decodeURIComponent(escape(atob(meta.content))));
-        } catch {
-          // 如果讀不到 data.json，就用預設值
-          config = { pageTitle: r.name, pdf: '', coverImage: '' };
-        }
+  for (const r of repos) {
+    // 1. 抓取並解析 data.json
+    let config = {};
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${r.full_name}/contents/data.json`,
+        { headers: { 'Authorization': `token ${currentToken}` } }
+      );
+      const meta = await res.json();
+      config = JSON.parse(decodeURIComponent(escape(atob(meta.content))));
+    } catch {
+      // 如果讀不到 data.json，就用預設值
+      config = { pageTitle: r.name, pdf: '', coverImage: '' };
+    }
 
-        // 2. 建立卡片
-        const url = `https://${r.owner.login}.github.io/${r.name}/`;
-        const card = document.createElement('div');
-        card.className = 'repo-card';
-        card.innerHTML = `
+    // 2. 建立卡片
+    const url = `https://${r.owner.login}.github.io/${r.name}/`;
+    const card = document.createElement('div');
+    card.className = 'repo-card';
+    card.innerHTML = `
       <div class="repo-header">
         <div class="repo-name">${r.name}</div>
         <div class="status-indicator ${r.has_pages ? 'status-active' : 'status-inactive'}">
@@ -523,17 +523,28 @@
       </div>
       <div class="repo-actions">
         <button class="btn" onclick="openSite('${url}')">訪問</button>
-        <button class="btn warning" onclick="openEditModal('${r.name}')">✏️ 編輯設定</button>
-        <button class="btn" onclick="openCoverModal('${r.name}','${config.coverImage || ''}')">🖼️ 更換封面</button>
+        <!-- 重新命名 Repo -->
+        <button class="btn warning" onclick="openRenameModal('${r.name}','${r.description || ''}')">
+          ✏️ 更換網址
+        </button>
+        <!-- 編輯 pageTitle / pdf -->
+        <button class="btn warning" onclick="openEditModal('${r.name}')">
+          ✏️ 編輯設定
+        </button>
+        <!-- 更換封面 -->
+        <button class="btn" onclick="openCoverModal('${r.name}','${config.coverImage || ''}')">
+          🖼️ 更換封面
+        </button>
         <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
-      </div>
-    `;
-        grid.appendChild(card);
+      </div>`;
+    grid.appendChild(card);
 
-        // 3. 檢查最後一次 Actions Run 狀態
-        checkWorkflow(r.name);
-      }
-    }
+    // 3. 檢查發布狀態
+    checkWorkflow(r.name);
+  }
+}
+
+    
     // dispatch workflow
     async function dispatchWorkflow(repo) {
       await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/workflows/deploy.yml/dispatches`, {
