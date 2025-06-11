@@ -197,6 +197,10 @@
   </div>
 
   <script>
+    function toBase64(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+
     // 範本倉庫設定，請先在 GitHub 上建立此 template repo
     const TEMPLATE_OWNER = 'seniorpowerinc';
     const TEMPLATE_REPO  = 'gift-template';
@@ -291,7 +295,7 @@
           return;
         }
         displayRepos(filtered);
-      } catch (e) {
+      } try { fetch } catch (e) {
         alert('載入失敗：' + e.message);
       }
     }
@@ -367,7 +371,7 @@
           pdf:       pdfLink,
           coverImage:`images/${uploadedCoverFile.name}`
         };
-        await uploadFile(name, 'data.json', btoa(JSON.stringify(dataJson,null,2)), true);
+        await uploadFile(name, 'data.json', JSON.stringify(dataJson,null,2), true);
 
         // 4) 啟用 Pages
         await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
@@ -406,7 +410,7 @@
         },
         body: JSON.stringify({
           message: `Add ${path}`,
-          content: isB64 ? content : btoa(content)
+          content: isB64 ? content : toBase64(content)
         })
       });
       if (!res.ok) {
