@@ -483,29 +483,29 @@
 
 
     async function displayRepos(repos) {
-  const grid = document.getElementById('reposGrid');
-  grid.innerHTML = '';
+      const grid = document.getElementById('reposGrid');
+      grid.innerHTML = '';
 
-  for (const r of repos) {
-    // 1. 抓取並解析 data.json
-    let config = {};
-    try {
-      const res = await fetch(
-        `https://api.github.com/repos/${r.full_name}/contents/data.json`,
-        { headers: { 'Authorization': `token ${currentToken}` } }
-      );
-      const meta = await res.json();
-      config = JSON.parse(decodeURIComponent(escape(atob(meta.content))));
-    } catch {
-      // 如果讀不到 data.json，就用預設值
-      config = { pageTitle: r.name, pdf: '', coverImage: '' };
-    }
+      for (const r of repos) {
+        // 1. 抓取並解析 data.json
+        let config = {};
+        try {
+          const res = await fetch(
+            `https://api.github.com/repos/${r.full_name}/contents/data.json`,
+            { headers: { 'Authorization': `token ${currentToken}` } }
+          );
+          const meta = await res.json();
+          config = JSON.parse(decodeURIComponent(escape(atob(meta.content))));
+        } catch {
+          // 如果讀不到 data.json，就用預設值
+          config = { pageTitle: r.name, pdf: '', coverImage: '' };
+        }
 
-    // 2. 建立卡片
-    const url = `https://${r.owner.login}.github.io/${r.name}/`;
-    const card = document.createElement('div');
-    card.className = 'repo-card';
-    card.innerHTML = `
+        // 2. 建立卡片
+        const url = `https://${r.owner.login}.github.io/${r.name}/`;
+        const card = document.createElement('div');
+        card.className = 'repo-card';
+        card.innerHTML = `
       <div class="repo-header">
         <div class="repo-name">${r.name}</div>
         <div class="status-indicator ${r.has_pages ? 'status-active' : 'status-inactive'}">
@@ -537,14 +537,14 @@
         </button>
         <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
       </div>`;
-    grid.appendChild(card);
+        grid.appendChild(card);
 
-    // 3. 檢查發布狀態
-    checkWorkflow(r.name);
-  }
-}
+        // 3. 檢查發布狀態
+        checkWorkflow(r.name);
+      }
+    }
 
-    
+
     // dispatch workflow
     async function dispatchWorkflow(repo) {
       await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/workflows/deploy.yml/dispatches`, {
@@ -688,17 +688,28 @@
       await new Promise(r => setTimeout(r, 500));
     }
 
+    @param { string } repoName - 要重新命名的 repo 名稱
+    @param { string } repoDesc - 原本的 repo 描述
     // rename/delete/openSite unchanged...
-    function openRenameModal(name, desc) { 
-      renameTarget = n; 
+    function openRenameModal(repoName, repoDesc) {
+      // 保存要改名的 target
+      renameTarget = repoName;
+
+      // 取得欄位元素
       const inpName = document.getElementById('newRepoName');
       const inpDesc = document.getElementById('newRepoDescription');
-      const modal   = document.getElementById('renameModal'); 
+      const modal = document.getElementById('renameModal');
+
+      // 確認有對應的元素
       if (!inpName || !inpDesc || !modal) {
-        return alert('重新命名元件不存在，請確認 HTML 定義中有輸入欄與 Modal 區塊');
+        return alert('找不到重新命名的欄位或 Modal 元件');
       }
-      inpName.value = name;
-      inpDesc.value = desc;
+
+      // 設定初始值
+      inpName.value = repoName;
+      inpDesc.value = repoDesc;
+
+      // 顯示 Modal
       modal.classList.add('show');
     }
     function closeRenameModal() { document.getElementById('renameModal').classList.remove('show'); }
