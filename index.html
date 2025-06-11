@@ -561,6 +561,7 @@
     // check workflow run
     async function checkWorkflow(repo) {
       const badge = document.getElementById(`status-${repo}`);
+      if (!badge) return; // 如果不存在就跳過
       try {
         const res = await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/runs?workflow_id=deploy.yml&per_page=1`, {
           headers: { 'Authorization': `token ${currentToken}` }
@@ -688,7 +689,18 @@
     }
 
     // rename/delete/openSite unchanged...
-    function openRenameModal(n, d) { renameTarget = n; document.getElementById('newRepoName').value = n; document.getElementById('newRepoDescription').value = d; document.getElementById('renameModal').classList.add('show'); }
+    function openRenameModal(name, desc) { 
+      renameTarget = n; 
+      const inpName = document.getElementById('newRepoName');
+      const inpDesc = document.getElementById('newRepoDescription');
+      const modal   = document.getElementById('renameModal'); 
+      if (!inpName || !inpDesc || !modal) {
+        return alert('重新命名元件不存在，請確認 HTML 定義中有輸入欄與 Modal 區塊');
+      }
+      inpName.value = name;
+      inpDesc.value = desc;
+      modal.classList.add('show');
+    }
     function closeRenameModal() { document.getElementById('renameModal').classList.remove('show'); }
     async function confirmRename() {
       const newName = document.getElementById('newRepoName').value.trim();
