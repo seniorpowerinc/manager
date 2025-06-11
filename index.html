@@ -570,7 +570,8 @@
           pageTitle: pageTitle,
           lang: 'zh-TW',
           pdf: pdfLink,
-          coverImage: `images/${uploadedCoverFile.name}`
+          coverImage: `images/${uploadedCoverFile.name}`,
+          groups: 'gift'
         };
         const dataB64 = toBase64(JSON.stringify(dataObj, null, 2));
         await uploadFile(name, 'data.json', dataB64, true);
