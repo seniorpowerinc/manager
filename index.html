@@ -429,6 +429,8 @@
 
         // 2. 逐一檢查 data.json 並解析 content
         for (const r of list) {
+
+          if (r.name === 'manager') continue;
           try {
             const c = await fetch(
               `https://api.github.com/repos/${r.full_name}/contents/data.json`,
