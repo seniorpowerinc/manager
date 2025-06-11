@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title id="pageTitle">GIFT</title>
+  <style>
+    /* 全域樣式 */
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+      background: linear-gradient(135deg, #e0f7fa, #bbdefb, #c5cae9);
+      font-family: Arial, sans-serif; }
+    .main-content { display:flex; flex-direction:column; align-items:center;
+      justify-content:center; width:100%; max-width:800px; margin:0 auto; padding:40px 0; }
+    .cover-image { width:90vw; max-width:500px; border-radius:10px;
+      box-shadow:0 8px 25px rgba(0,0,0,0.2); transition:transform .5s, opacity .5s;
+      cursor:pointer; }
+    .cover-image:hover { transform:scale(1.05); }
+    .lift-open { transform:scale(1.8); opacity:0; }
+    .open-button { position:absolute; bottom:60px; left:50%; transform:translateX(-50%);
+      background:linear-gradient(145deg,#63BE7B,#FFEF9C); color:black; border:none;
+      padding:12px 30px; font-size:34px; font-weight:bold; border-radius:50px;
+      box-shadow:0 5px 15px rgba(255,94,98,0.4); cursor:pointer; z-index:3; }
+    @media(max-width:768px){ .open-button{font-size:28px;padding:10px 24px;bottom:40px;} }
+    /* PDF 容器（90% 大小） */
+    #pdf-container { display:none; position:fixed; top:5%; left:5%;
+      width:90%; height:90%; background:#fff; overflow:hidden;
+      box-shadow:0 4px 20px rgba(0,0,0,0.2); border-radius:8px; }
+    #pdf-frame { width:100%; height:100%; border:none; }
+    /* Confetti canvas */
+    #confetti-canvas { position:fixed; top:0; left:0; width:100%; height:100%;
+      pointer-events:none; z-index:1001; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="main-content">
+    <div style="position:relative;">
+      <img id="coverImage" class="cover-image" src="" alt="封面">
+      <button id="openButton" class="open-button">閱讀</button>
+    </div>
+  </div>
+
+  <div id="pdf-container">
+    <iframe id="pdf-frame" src="" allow="autoplay; encrypted-media" loading="lazy"></iframe>
+  </div>
+
+  <canvas id="confetti-canvas"></canvas>
+  <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
+  <script>
+    let windowPdfUrl = '';
+    // 從 data.json 載入設定
+    fetch('data.json?bust=' + Date.now())
+      .then(res => res.json())
+      .then(d => {
+        // 設定語系與標題
+        document.documentElement.lang = d.lang || 'zh-TW';
+        document.getElementById('pageTitle').textContent = d.pageTitle || 'GIFT';
+        document.title = d.pageTitle || document.title;
+        // 封面圖片
+        document.getElementById('coverImage').src = d.coverImage || 'SPI.png';
+        // 轉換 view URL 為 preview URL
+        if (d.pdf) {
+          windowPdfUrl = d.pdf.replace('/view?usp=sharing', '/preview');
+        }
+        // iframe 預載
+        document.getElementById('pdf-frame').src = windowPdfUrl;
+      })
+      .catch(console.error);
+
+    const btn = document.getElementById('openButton');
+    const img = document.getElementById('coverImage');
+    const pdfContainer = document.getElementById('pdf-container');
+    const canvas = document.getElementById('confetti-canvas');
+    const myConfetti = confetti.create(canvas, { resize:true, useWorker:false });
+    const sound = document.getElementById('celebration-sound');
+
+    function openGift() {
+      img.classList.add('lift-open');
+      btn.style.display = 'none';
+      setTimeout(() => {
+        pdfContainer.style.display = 'block';
+        try { sound.play(); myConfetti({ particleCount:150, spread:120, origin:{ y:0.6 } }); }
+        catch(e) { console.log('confetti suppressed'); }
+      }, 300);
+    }
+    btn.addEventListener('click', e => { e.stopPropagation(); openGift(); });
+    img.addEventListener('click', openGift);
+    img.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') openGift(); });
+  </script>
+</body>
+</html>
