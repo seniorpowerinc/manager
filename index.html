@@ -503,72 +503,83 @@
       if (!name) return alert('請輸入 Repo 名稱');
       if (!pageTitle) return alert('請輸入 網站名稱');
       if (!uploadedCoverFile) return alert('請上傳封面圖');
+
       const btn = document.getElementById('createRepoBtn');
-      btn.innerHTML = '創建中…<span class="loading"></span>'; btn.disabled = true;
+      btn.innerHTML = '創建中…<span class="loading"></span>';
+      btn.disabled = true;
+
       try {
-        // 1) generate
-        let r = await fetch(
-          `https://api.github.com/repos/${TEMPLATE_OWNER}/${TEMPLATE_REPO}/generate`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `token ${currentToken}`,
-            'Accept': 'application/vnd.github.baptiste-preview+json'
-          },
-          body: JSON.stringify({ owner: currentUser, name })
-        });
-        if (!r.ok) throw new Error('從範本建立失敗');
+        // 1) 從範本建立新 Repo
+        let res = await fetch(
+          `https://api.github.com/repos/${TEMPLATE_OWNER}/${TEMPLATE_REPO}/generate`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `token ${currentToken}`,
+              'Accept': 'application/vnd.github.baptiste-preview+json'
+            },
+            body: JSON.stringify({ owner: currentUser, name })
+          }
+        );
+        if (!res.ok) throw new Error('從範本建立失敗');
+        // 等 GitHub 初始化 repo
         await new Promise(r => setTimeout(r, 2000));
 
-        // 2) upload cover
+        // 2) 上傳封面圖
         const imgB64 = await new Promise(r => {
-          const f = new FileReader();
-          f.onload = () => r(f.result.split(',')[1]);
-          f.readAsDataURL(uploadedCoverFile);
+          const fr = new FileReader();
+          fr.onload = () => r(fr.result.split(',')[1]);
+          fr.readAsDataURL(uploadedCoverFile);
         });
         await uploadFile(name, `images/${uploadedCoverFile.name}`, imgB64, true);
 
-        // 3) update data.json
-        const obj = { pageTitle, lang: 'zh-TW', pdf: pdfLink, coverImage: `images/${uploadedCoverFile.name}` };
-        await uploadFile(name, 'data.json', toBase64(JSON.stringify(obj, null, 2)), true);
+        // 3) 更新 data.json
+        const dataObj = {
+          pageTitle: pageTitle,
+          lang: 'zh-TW',
+          pdf: pdfLink,
+          coverImage: `images/${uploadedCoverFile.name}`
+        };
+        const dataB64 = toBase64(JSON.stringify(dataObj, null, 2));
+        await uploadFile(name, 'data.json', dataB64, true);
 
-        // 4) dispatch & wait success
-        await dispatchWorkflow(name);
-        let ok = false;
-        for (let i = 0; i < 20 && !ok; i++) {
+        // 4) 啟用 Pages（原始方式）
+        await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `token ${currentToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ source: { branch: 'main', path: '/' } })
+        });
+
+        // 5) 每 5 秒輪詢，最多 48 次 (~4 分鐘)，直到 siteUrl 不再 404
+        const siteUrl = `https://${currentUser}.github.io/${name}/`;
+        let published = false;
+        for (let i = 0; i < 48; i++) {
+          try {
+            const head = await fetch(siteUrl, { method: 'HEAD' });
+            if (head.ok) { published = true; break; }
+          } catch (_) { }
           await new Promise(r => setTimeout(r, 5000));
-          const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}/actions/runs?workflow_id=deploy.yml&per_page=1`, {
-            headers: { 'Authorization': `token ${currentToken}` }
-          });
-          const d = await res.json(), run = d.workflow_runs[0];
-          if (run && run.conclusion === 'success') ok = true;
         }
-        if (!ok) throw new Error('發布逾時');
+        if (!published) throw new Error('等待發布逾時，請稍後手動檢查');
 
-        await fetch(
-          `https://api.github.com/repos/${currentUser}/${name}/pages`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `token ${currentToken}`,
-              'Content-Type':  'application/json'
-            },
-            body: JSON.stringify({ source: { branch:'main', path:'/' } })
-          }
-        );
-        
-        // 5) open & link
-        const site = `https://${currentUser}.github.io/${name}/`;
-        window.open(site, '_blank');
+        // 6) 成功後打開新分頁 & 顯示連結
+        window.open(siteUrl, '_blank');
         document.getElementById('newRepoLink').innerHTML =
-          `已創建並發布: <a href="${site}" target="_blank">${site}</a>`;
-        alert('網站建立並發布成功！');
+          `已創建並發布: <a href="${siteUrl}" target="_blank">${siteUrl}</a>`;
 
-        // reset
+        alert('禮物網站建立並發布成功！');
+
+        // 7) 重置表單 & 重新載入列表
         document.getElementById('repoName').value = '';
         document.getElementById('pageTitle').value = '';
         document.getElementById('pdfUrl').value = '';
         previewImg.style.display = 'none';
         uploadedCoverFile = null;
         await loadRepos();
+
       } catch (e) {
         alert('錯誤：' + e.message);
       } finally {
