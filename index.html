@@ -544,6 +544,17 @@
         }
         if (!ok) throw new Error('發布逾時');
 
+        await fetch(
+          `https://api.github.com/repos/${currentUser}/${name}/pages`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${currentToken}`,
+              'Content-Type':  'application/json'
+            },
+            body: JSON.stringify({ source: { branch:'main', path:'/' } })
+          }
+        );
+        
         // 5) open & link
         const site = `https://${currentUser}.github.io/${name}/`;
         window.open(site, '_blank');
