@@ -244,7 +244,7 @@
       color: #000;
     }
 
-    @media (max-width: 600px) {
+    @media(max-width:600px) {
       .repos-grid {
         grid-template-columns: 1fr;
       }
@@ -268,13 +268,13 @@
       <!-- 認證 -->
       <div id="authSection" class="section">
         <h2>🔐 GitHub 認證</h2>
-        <p>請使用 PAT (Classic)，授權：repo、delete_repo、user</p>
-        <div>
+        <div class="form-group">
+          <label>Token</label>
           <input id="tokenInput" type="password" placeholder="貼上 Personal Access Token (Classic)">
-          <button id="loginBtn" class="btn">登入</button>
         </div>
-        <div id="userInfo" class="section hidden"
-          style="display:flex;justify-content:space-between;align-items:center;">
+        <button id="loginBtn" class="btn">登入</button>
+        <div id="userInfo" class="section authenticated hidden"
+          style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;">
           <span>已登入：<strong id="username"></strong></span>
           <button class="btn danger" onclick="logout()">登出</button>
         </div>
@@ -292,21 +292,23 @@
           <textarea id="repoDescription" rows="2" placeholder="網站描述…"></textarea>
         </div>
 
-        <!-- 拖曳／點擊 上傳 封面圖 -->
-        <div id="dropZone" class="form-group"
-          style="border:2px dashed #aaa;padding:20px;text-align:center;border-radius:8px;">
-          <p>拖曳封面圖到此，或<span style="color:#4facfe;cursor:pointer;" onclick="fileInput.click()">點擊選擇</span></p>
-          <input id="fileInput" type="file" accept="image/*" style="display:none">
-          <img id="previewImg" src="#" alt="預覽" style="max-width:100%;margin-top:10px;display:none;
-                      border-radius:8px;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
-        </div>
-
         <div class="form-group">
           <label>PDF 分享連結</label>
           <input id="pdfUrl" type="url" placeholder="https://drive.google.com/...">
         </div>
 
+        <div class="form-group">
+          <label>上傳封面圖片</label>
+          <div id="dropZone" style="border:2px dashed #aaa;padding:20px;text-align:center;border-radius:8px;">
+            <p>拖曳封面圖到此，或<span style="color:#4facfe;cursor:pointer;" onclick="fileInput.click()">點擊選擇</span></p>
+            <input id="fileInput" type="file" accept="image/*" style="display:none">
+            <img id="previewImg" src="#" alt="預覽" style="max-width:100%;margin-top:10px;display:none;
+                     border-radius:8px;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
+          </div>
+        </div>
+
         <button id="createRepoBtn" class="btn success">創建</button>
+        <span id="newRepoLink" style="margin-left:16px;"></span>
       </div>
 
       <!-- Repo 列表 -->
@@ -340,7 +342,6 @@
       return btoa(unescape(encodeURIComponent(str)));
     }
 
-    // 範本倉庫設定，請先在 GitHub 上建立此 template repo
     const TEMPLATE_OWNER = 'seniorpowerinc';
     const TEMPLATE_REPO = 'gift-template';
 
@@ -375,7 +376,7 @@
       reader.readAsDataURL(file);
     }
 
-    // 認證
+    // authenticate
     document.getElementById('loginBtn').onclick = authenticate;
     async function authenticate() {
       const token = document.getElementById('tokenInput').value.trim();
@@ -391,7 +392,6 @@
         const user = await res.json();
         currentToken = token;
         currentUser = user.login;
-        // 切換 UI
         document.getElementById('authSection').classList.add('authenticated');
         document.getElementById('username').textContent = user.login;
         document.getElementById('userInfo').style.display = 'flex';
@@ -408,46 +408,30 @@
       }
     }
 
-    // 登出
-    function logout() {
-      location.reload();
-    }
+    function logout() { location.reload(); }
 
-    // 載入並顯示 Repos
     async function loadRepos() {
       const grid = document.getElementById('reposGrid');
       grid.innerHTML = '';
-
       try {
-        // 1. 取得使用者所有 repos
-        const res = await fetch(
-          'https://api.github.com/user/repos?per_page=100&sort=updated',
-          { headers: { 'Authorization': `token ${currentToken}` } }
-        );
+        const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+          headers: { 'Authorization': `token ${currentToken}` }
+        });
         if (!res.ok) throw new Error('無法取得 Repos');
-        const list = await res.json();
-
-        // 2. 篩選出含 data.json 的禮物網站 repos
-        const filtered = [];
+        const list = await res.json(), filtered = [];
         for (const r of list) {
           try {
-            const c = await fetch(
-              `https://api.github.com/repos/${r.full_name}/contents/data.json`,
-              { headers: { 'Authorization': `token ${currentToken}` } }
-            );
+            const c = await fetch(`https://api.github.com/repos/${r.full_name}/contents/data.json`, {
+              headers: { 'Authorization': `token ${currentToken}` }
+            });
             if (c.ok) filtered.push(r);
-          } catch {
-            // 只有 network error 才會到這裡，404 只會讓 c.ok===false
-          }
+          } catch { }
         }
-
-        // 3. 顯示結果
         if (!filtered.length) {
           grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#666;">尚無任何禮物網站</p>';
         } else {
           displayRepos(filtered);
         }
-
       } catch (e) {
         alert('載入失敗：' + e.message);
       }
@@ -455,6 +439,7 @@
 
     function displayRepos(repos) {
       const grid = document.getElementById('reposGrid');
+      grid.innerHTML = '';
       repos.forEach(r => {
         const url = `https://${r.owner.login}.github.io/${r.name}/`;
         const card = document.createElement('div');
@@ -479,7 +464,6 @@
       });
     }
 
-    // 建立新 Repo (從範本複製)
     document.getElementById('createRepoBtn').onclick = createRepo;
     async function createRepo() {
       const name = document.getElementById('repoName').value.trim();
@@ -491,7 +475,6 @@
       btn.innerHTML = '創建中…<span class="loading"></span>';
       btn.disabled = true;
       try {
-        // 1) 從範本建立
         let res = await fetch(
           `https://api.github.com/repos/${TEMPLATE_OWNER}/${TEMPLATE_REPO}/generate`, {
           method: 'POST',
@@ -499,46 +482,34 @@
             'Authorization': `token ${currentToken}`,
             'Accept': 'application/vnd.github.baptiste-preview+json'
           },
-          body: JSON.stringify({
-            owner: currentUser,
-            name: name,
-            description: desc
-          })
-        });
+          body: JSON.stringify({ owner: currentUser, name, description: desc })
+        }
+        );
         if (!res.ok) throw new Error('從範本建立失敗');
-        // 等初始化
         await new Promise(r => setTimeout(r, 2000));
 
-        // 2) 上傳封面圖
-        const imgBase64 = await new Promise(r => {
+        const imgB64 = await new Promise(r => {
           const fr = new FileReader();
           fr.onload = () => r(fr.result.split(',')[1]);
           fr.readAsDataURL(uploadedCoverFile);
         });
-        await uploadFile(name, `images/${uploadedCoverFile.name}`, imgBase64, true);
+        await uploadFile(name, `images/${uploadedCoverFile.name}`, imgB64, true);
 
-        // 3) 更新 data.json
-        const dataJson = {
-          pageTitle: name,
-          lang: 'zh-TW',
-          pdf: pdfLink,
-          coverImage: `images/${uploadedCoverFile.name}`
-        };
-        const dataB64 = toBase64(JSON.stringify(dataJson, null, 2));
-        await uploadFile(name, 'data.json', dataB64, true);
+        const dataJson = { pageTitle: name, lang: 'zh-TW', pdf: pdfLink, coverImage: `images/${uploadedCoverFile.name}` };
+        await uploadFile(name, 'data.json', toBase64(JSON.stringify(dataJson, null, 2)), true);
 
-        // 4) 啟用 Pages
         await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
           method: 'POST',
-          headers: {
-            'Authorization': `token ${currentToken}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ source: { branch: 'main', path: '/' } })
         });
 
+        const siteUrl = `https://${currentUser}.github.io/${name}/`;
+        window.open(siteUrl, '_blank');
+        document.getElementById('newRepoLink').innerHTML =
+          `已創建: <a href="${siteUrl}" target="_blank" style="color:#4facfe;">${siteUrl}</a>`;
+
         alert('禮物網站建立完成！');
-        // 重置
         document.getElementById('repoName').value = '';
         document.getElementById('repoDescription').value = '';
         document.getElementById('pdfUrl').value = '';
@@ -553,55 +524,21 @@
       }
     }
 
-    // 通用上傳工具
-    // 通用上傳工具：自動處理新增或更新（含 sha）
-async function uploadFile(repo, path, content, isBase64 = false) {
-  const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`;
-  const headers = {
-    'Authorization': `token ${currentToken}`,
-    'Content-Type':  'application/json'
-  };
-
-  // 1. 嘗試讀取既有檔案，取得 sha
-  let sha;
-  try {
-    const getRes = await fetch(url, { headers });
-    if (getRes.ok) {
-      const meta = await getRes.json();
-      sha = meta.sha;
+    async function uploadFile(repo, path, content, isBase64 = false) {
+      const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`;
+      const headers = { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' };
+      let sha;
+      try {
+        const getRes = await fetch(url, { headers });
+        if (getRes.ok) sha = (await getRes.json()).sha;
+      } catch { }
+      const body = { message: `Add or update ${path}`, content: isBase64 ? content : toBase64(content) };
+      if (sha) body.sha = sha;
+      const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error((await res.json()).message || `上傳 ${path} 失敗`);
+      await new Promise(r => setTimeout(r, 500));
     }
-    // 如果 404 就不理它，sha 保持 undefined
-  } catch (e) {
-    // network error 才會進這裡
-  }
 
-  // 2. 組 body
-  const body = {
-    message: `Add or update ${path}`,
-    content: isBase64 ? content : toBase64(content)
-  };
-  if (sha) {
-    body.sha = sha;  // 更新時需要
-  }
-
-  // 3. 發 PUT 請求
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify(body)
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || `Failed to upload ${path}`);
-  }
-
-  // 4. 防速率限制
-  await new Promise(r => setTimeout(r, 500));
-}
-
-
-    // 重新命名
     function openRenameModal(name, desc) {
       renameTarget = name;
       document.getElementById('newRepoName').value = name;
@@ -616,62 +553,44 @@ async function uploadFile(repo, path, content, isBase64 = false) {
       const newDesc = document.getElementById('newRepoDescription').value.trim();
       if (!newName) { alert('新名稱不可為空'); return; }
       try {
-        let res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
           method: 'PATCH',
-          headers: {
-            'Authorization': `token ${currentToken}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newName, description: newDesc })
         });
         if (!res.ok) throw new Error('重新命名失敗');
         alert('已重新命名');
         closeRenameModal();
         await loadRepos();
-      } catch (e) {
-        alert('錯誤：' + e.message);
-      }
+      } catch (e) { alert('錯誤：' + e.message); }
     }
 
-    // 刪除
     async function deleteRepo(name) {
       if (!confirm(`確定刪除 ${name}？此操作無法還原！`)) return;
       try {
-        let res = await fetch(`https://api.github.com/repos/${currentUser}/${name}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `token ${currentToken}` }
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}`, {
+          method: 'DELETE', headers: { 'Authorization': `token ${currentToken}` }
         });
         if (!res.ok) throw new Error('刪除失敗');
         alert('已刪除');
         await loadRepos();
-      } catch (e) {
-        alert('錯誤：' + e.message);
-      }
+      } catch (e) { alert('錯誤：' + e.message); }
     }
 
-    // 啟用 Pages (若用 Template Repo generate，通常已啟用)
     async function enablePages(name) {
       try {
-        let res = await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
           method: 'POST',
-          headers: {
-            'Authorization': `token ${currentToken}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ source: { branch: 'main', path: '/' } })
         });
         if (!res.ok) throw new Error('啟用失敗');
         alert('Pages 已啟用');
         await loadRepos();
-      } catch (e) {
-        alert('錯誤：' + e.message);
-      }
+      } catch (e) { alert('錯誤：' + e.message); }
     }
 
-    // 開新分頁
-    function openSite(url) {
-      window.open(url, '_blank');
-    }
+    function openSite(url) { window.open(url, '_blank'); }
   </script>
 </body>
 
