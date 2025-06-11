@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>🎁 GitHub 禮物網站管理</title>
   <style>
-    /* Reset & 全站樣式（不變） */
+    /* Reset & 全站樣式 */
     * {
       margin: 0;
       padding: 0;
@@ -14,7 +14,7 @@
     }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea, #764ba2);
       min-height: 100vh;
       padding: 20px;
@@ -57,6 +57,7 @@
       background: linear-gradient(135deg, #4facfe, #00f2fe);
       color: #fff;
       transition: transform .2s, box-shadow .2s;
+      text-align: center;
     }
 
     .btn:hover {
@@ -282,15 +283,13 @@
       <!-- 新增 Repo -->
       <div id="addRepoSection" class="section hidden">
         <h2>➕ 新增禮物網站</h2>
-
         <div class="form-group">
           <label>Repo 名稱</label>
           <input id="repoName" type="text" placeholder="例如：my-gift-site">
         </div>
-
         <div class="form-group">
-          <label>網站名稱</label>
-          <input id="pageTitle" type="text" placeholder="例如：我的禮物網站">
+          <label>描述（可選）</label>
+          <textarea id="repoDescription" rows="2" placeholder="網站描述…"></textarea>
         </div>
 
         <div class="form-group">
@@ -301,12 +300,10 @@
         <div class="form-group">
           <label>上傳封面圖片</label>
           <div id="dropZone" style="border:2px dashed #aaa;padding:20px;text-align:center;border-radius:8px;">
-            <p>拖曳封面圖到此，或
-              <span style="color:#4facfe;cursor:pointer;" onclick="fileInput.click()">點擊選擇</span>
-            </p>
+            <p>拖曳封面圖到此，或<span style="color:#4facfe;cursor:pointer;" onclick="fileInput.click()">點擊選擇</span></p>
             <input id="fileInput" type="file" accept="image/*" style="display:none">
             <img id="previewImg" src="#" alt="預覽" style="max-width:100%;margin-top:10px;display:none;
-                        border-radius:8px;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
+                     border-radius:8px;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
           </div>
         </div>
 
@@ -341,7 +338,6 @@
   </div>
 
   <script>
-    // UTF-8 安全 Base64
     function toBase64(str) {
       return btoa(unescape(encodeURIComponent(str)));
     }
@@ -349,7 +345,10 @@
     const TEMPLATE_OWNER = 'seniorpowerinc';
     const TEMPLATE_REPO = 'gift-template';
 
-    let currentToken = '', currentUser = '', renameTarget = '', uploadedCoverFile = null;
+    let currentToken = '';
+    let currentUser = '';
+    let renameTarget = '';
+    let uploadedCoverFile = null;
 
     // 拖曳 & 預覽
     const dropZone = document.getElementById('dropZone');
@@ -377,20 +376,22 @@
       reader.readAsDataURL(file);
     }
 
-    // Authenticate
+    // authenticate
     document.getElementById('loginBtn').onclick = authenticate;
     async function authenticate() {
       const token = document.getElementById('tokenInput').value.trim();
       if (!token) { alert('請輸入 Token'); return; }
       const btn = document.getElementById('loginBtn');
-      btn.innerHTML = '驗證中…<span class="loading"></span>'; btn.disabled = true;
+      btn.innerHTML = '驗證中…<span class="loading"></span>';
+      btn.disabled = true;
       try {
         const res = await fetch('https://api.github.com/user', {
           headers: { 'Authorization': `token ${token}` }
         });
         if (!res.ok) throw new Error('Token 無效或權限不足');
         const user = await res.json();
-        currentToken = token; currentUser = user.login;
+        currentToken = token;
+        currentUser = user.login;
         document.getElementById('authSection').classList.add('authenticated');
         document.getElementById('username').textContent = user.login;
         document.getElementById('userInfo').style.display = 'flex';
@@ -402,13 +403,13 @@
       } catch (e) {
         alert('認證失敗：' + e.message);
       } finally {
-        btn.innerHTML = '登入'; btn.disabled = false;
+        btn.innerHTML = '登入';
+        btn.disabled = false;
       }
     }
 
     function logout() { location.reload(); }
 
-    // Load & display repos (unchanged)...
     async function loadRepos() {
       const grid = document.getElementById('reposGrid');
       grid.innerHTML = '';
@@ -435,6 +436,7 @@
         alert('載入失敗：' + e.message);
       }
     }
+
     function displayRepos(repos) {
       const grid = document.getElementById('reposGrid');
       grid.innerHTML = '';
@@ -445,62 +447,34 @@
         card.innerHTML = `
           <div class="repo-header">
             <div class="repo-name">${r.name}</div>
-            <!-- 以 Actions 最後一次執行狀態顯示 -->
-            <div class="status-indicator" id="status-${r.name}">檢查中...</div>
+            <div class="status-indicator ${r.has_pages ? 'status-active' : 'status-inactive'}">
+              ${r.has_pages ? '已發布' : '未發布'}
+            </div>
           </div>
           <div class="repo-url"><a href="${url}" target="_blank">${url}</a></div>
+          <div class="repo-url">描述：${r.description || '—'}</div>
+          <div class="repo-url">更新：${new Date(r.updated_at).toLocaleString('zh-TW')}</div>
           <div class="repo-actions">
             <button class="btn" onclick="openSite('${url}')">訪問</button>
             <button class="btn warning" onclick="openRenameModal('${r.name}','${r.description || ''}')">重新命名</button>
-            <button class="btn success" onclick="enablePages('${r.name}')">重新發布</button>
+            <button class="btn" onclick="enablePages('${r.name}')" ${r.has_pages ? 'style="display:none"' : ''}>啟用 Pages</button>
             <button class="btn danger" onclick="deleteRepo('${r.name}')">刪除</button>
           </div>`;
         grid.appendChild(card);
-        checkLastWorkflow(r.name);
       });
     }
 
-    // 檢查最後一次 Actions Run 狀態
-    async function checkLastWorkflow(repo) {
-      const badge = document.getElementById(`status-${repo}`);
-      try {
-        const res = await fetch(`https://api.github.com/repos/${currentUser}/${repo}/actions/runs?per_page=1`, {
-          headers: { 'Authorization': `token ${currentToken}` }
-        });
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        const run = data.workflow_runs[0];
-        if (!run) {
-          badge.textContent = '無執行記錄';
-          badge.className = 'status-indicator status-inactive';
-        } else if (run.conclusion === 'success') {
-          badge.textContent = '✅ 发布成功';
-          badge.className = 'status-indicator status-active';
-        } else {
-          badge.textContent = '❌ 发布失敗';
-          badge.className = 'status-indicator status-inactive';
-        }
-      } catch {
-        badge.textContent = '狀態未知';
-        badge.className = 'status-indicator status-inactive';
-      }
-    }
-
-    // Create new repo
     document.getElementById('createRepoBtn').onclick = createRepo;
     async function createRepo() {
       const name = document.getElementById('repoName').value.trim();
-      const pageTitle = document.getElementById('pageTitle').value.trim();
+      const desc = document.getElementById('repoDescription').value.trim() || `${name} 禮物網站`;
       const pdfLink = document.getElementById('pdfUrl').value.trim();
-      if (!name) return alert('請輸入 Repo 名稱');
-      if (!pageTitle) return alert('請輸入 網站名稱');
-      if (!uploadedCoverFile) return alert('請上傳封面圖');
-
+      if (!name) { alert('請輸入 Repo 名稱'); return; }
+      if (!uploadedCoverFile) { alert('請上傳封面圖'); return; }
       const btn = document.getElementById('createRepoBtn');
-      btn.innerHTML = '創建中…<span class="loading"></span>'; btn.disabled = true;
-
+      btn.innerHTML = '創建中…<span class="loading"></span>';
+      btn.disabled = true;
       try {
-        // 1) Generate
         let res = await fetch(
           `https://api.github.com/repos/${TEMPLATE_OWNER}/${TEMPLATE_REPO}/generate`, {
           method: 'POST',
@@ -508,12 +482,12 @@
             'Authorization': `token ${currentToken}`,
             'Accept': 'application/vnd.github.baptiste-preview+json'
           },
-          body: JSON.stringify({ owner: currentUser, name, description: pageTitle })
-        });
+          body: JSON.stringify({ owner: currentUser, name, description: desc })
+        }
+        );
         if (!res.ok) throw new Error('從範本建立失敗');
         await new Promise(r => setTimeout(r, 2000));
 
-        // 2) Upload cover
         const imgB64 = await new Promise(r => {
           const fr = new FileReader();
           fr.onload = () => r(fr.result.split(',')[1]);
@@ -521,35 +495,27 @@
         });
         await uploadFile(name, `images/${uploadedCoverFile.name}`, imgB64, true);
 
-        // 3) Update data.json
-        const dataObj = { pageTitle, lang: 'zh-TW', pdf: pdfLink, coverImage: `images/${uploadedCoverFile.name}` };
-        await uploadFile(name, 'data.json', toBase64(JSON.stringify(dataObj, null, 2)), true);
+        const dataJson = { pageTitle: name, lang: 'zh-TW', pdf: pdfLink, coverImage: `images/${uploadedCoverFile.name}` };
+        await uploadFile(name, 'data.json', toBase64(JSON.stringify(dataJson, null, 2)), true);
 
-        // 4) Poll Pages until available
-        const pagesUrl = `https://api.github.com/repos/${currentUser}/${name}/pages`;
-        let published = false;
-        for (let i = 0; i < 20 && !published; i++) {
-          await new Promise(r => setTimeout(r, 3000));
-          const p = await fetch(pagesUrl, { headers: { 'Authorization': `token ${currentToken}` } });
-          if (p.ok) published = true;
-        }
-        if (!published) throw new Error('Pages 部署逾時');
+        await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
+          method: 'POST',
+          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: { branch: 'main', path: '/' } })
+        });
 
-        // 5) Open and link
         const siteUrl = `https://${currentUser}.github.io/${name}/`;
         window.open(siteUrl, '_blank');
         document.getElementById('newRepoLink').innerHTML =
-          `已創建並發布: <a href="${siteUrl}" target="_blank" style="color:#4facfe;">${siteUrl}</a>`;
+          `已創建: <a href="${siteUrl}" target="_blank" style="color:#4facfe;">${siteUrl}</a>`;
 
-        alert('禮物網站建立並發布成功！');
-        // reset
+        alert('禮物網站建立完成！');
         document.getElementById('repoName').value = '';
-        document.getElementById('pageTitle').value = '';
+        document.getElementById('repoDescription').value = '';
         document.getElementById('pdfUrl').value = '';
         previewImg.style.display = 'none';
         uploadedCoverFile = null;
         await loadRepos();
-
       } catch (e) {
         alert('錯誤：' + e.message);
       } finally {
@@ -558,8 +524,7 @@
       }
     }
 
-    // Upload utility
-    async function uploadFile(repo, path, content, isB64 = false) {
+    async function uploadFile(repo, path, content, isBase64 = false) {
       const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${path}`;
       const headers = { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' };
       let sha;
@@ -567,14 +532,13 @@
         const getRes = await fetch(url, { headers });
         if (getRes.ok) sha = (await getRes.json()).sha;
       } catch { }
-      const body = { message: `Add or update ${path}`, content: isB64 ? content : toBase64(content) };
+      const body = { message: `Add or update ${path}`, content: isBase64 ? content : toBase64(content) };
       if (sha) body.sha = sha;
       const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
       if (!res.ok) throw new Error((await res.json()).message || `上傳 ${path} 失敗`);
       await new Promise(r => setTimeout(r, 500));
     }
 
-    // Rename / Delete / EnablePages / openSite (unchanged)...
     function openRenameModal(name, desc) {
       renameTarget = name;
       document.getElementById('newRepoName').value = name;
@@ -600,6 +564,7 @@
         await loadRepos();
       } catch (e) { alert('錯誤：' + e.message); }
     }
+
     async function deleteRepo(name) {
       if (!confirm(`確定刪除 ${name}？此操作無法還原！`)) return;
       try {
@@ -611,6 +576,7 @@
         await loadRepos();
       } catch (e) { alert('錯誤：' + e.message); }
     }
+
     async function enablePages(name) {
       try {
         const res = await fetch(`https://api.github.com/repos/${currentUser}/${name}/pages`, {
@@ -619,10 +585,11 @@
           body: JSON.stringify({ source: { branch: 'main', path: '/' } })
         });
         if (!res.ok) throw new Error('啟用失敗');
-        alert('Pages 已重新發布');
+        alert('Pages 已啟用');
         await loadRepos();
       } catch (e) { alert('錯誤：' + e.message); }
     }
+
     function openSite(url) { window.open(url, '_blank'); }
   </script>
 </body>
