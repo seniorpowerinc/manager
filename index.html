@@ -357,8 +357,8 @@ async function createRepo(){
       await uploadFile(name,`images/${imgName}`, base64);
 
       // 4. 上傳 index.html（使用你提供的模板）
-      const indexHtml = await (await fetch('index.html')).text(); 
-      await uploadFile(name,'index.html', btoa(unescape(encodeURIComponent(indexHtml))));
+      const indexHtml = await (await fetch('temp/index.html')).text(); 
+      await uploadFile(name,'temp/index.html', btoa(unescape(encodeURIComponent(indexHtml))));
 
       // 5. 上傳 data.json
       const dataJson = {
