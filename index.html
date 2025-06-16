@@ -601,6 +601,12 @@
       }
     }
 
+    function decodeBase64Utf8(base64) {
+      const binary = atob(base64);
+      const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+      return new TextDecoder('utf-8').decode(bytes);
+    }
+
     async function updateOGMeta(repo, newTitle, newDesc) {
       const filePath = 'index.html';
       const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${filePath}`;
@@ -609,7 +615,7 @@
       });
       if (!res.ok) throw new Error('無法讀取 index.html');
       const data = await res.json();
-      let content = atob(data.content.replace(/\n/g, ''));
+      let content = decodeBase64Utf8(data.content.replace(/\n/g, ''));
 
       function replaceOrInsert(prop, value) {
         const tag = `<meta property=\"${prop}\" content=\"${value}\">`;
