@@ -352,24 +352,24 @@
       <button class="btn" onclick="closeCoverModal()">取消</button>
     </div>
   </div>
-  
+
   <div id="renameModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeRenameModal()">&times;</span>
-    <h3>重新命名 Repo</h3>
-    <div class="form-group">
-      <label>新名稱</label>
-      <input id="newRepoName" type="text">
+    <div class="modal-content">
+      <span class="close" onclick="closeRenameModal()">&times;</span>
+      <h3>重新命名 Repo</h3>
+      <div class="form-group">
+        <label>新名稱</label>
+        <input id="newRepoName" type="text">
+      </div>
+      <div class="form-group">
+        <label>新描述</label>
+        <textarea id="newRepoDescription" rows="2"></textarea>
+      </div>
+      <button class="btn success" onclick="confirmRename()">確認</button>
+      <button class="btn" onclick="closeRenameModal()">取消</button>
     </div>
-    <div class="form-group">
-      <label>新描述</label>
-      <textarea id="newRepoDescription" rows="2"></textarea>
-    </div>
-    <button class="btn success" onclick="confirmRename()">確認</button>
-    <button class="btn" onclick="closeRenameModal()">取消</button>
   </div>
-</div>
-  
+
   <script>
     // UTF8-safe base64
     function toBase64(str) {
@@ -597,6 +597,45 @@
       }
     }
 
+    async function updateOGMeta(repo, newTitle, newDesc) {
+      const filePath = 'index.html';
+      const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${filePath}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `token ${currentToken}` }
+      });
+      if (!res.ok) throw new Error('無法讀取 index.html');
+      const data = await res.json();
+      let content = atob(data.content.replace(/\n/g, ''));
+
+      function replaceOrInsert(prop, value) {
+        const tag = `<meta property=\"${prop}\" content=\"${value}\">`;
+        const re = new RegExp(`<meta\\s+property=\\"${prop}\\"[^>]*>`, 'i');
+        if (re.test(content)) {
+          content = content.replace(re, tag);
+        } else {
+          content = content.replace(/<head([^>]*)>/i, `<head$1>\n    ${tag}`);
+        }
+      }
+      if (newTitle) replaceOrInsert('og:title', newTitle);
+      if (newDesc) replaceOrInsert('og:description', newDesc);
+
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const commitBody = {
+        message: 'Update og:title / og:description via Manager',
+        content: encoded,
+        sha: data.sha
+      };
+      const commitRes = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${currentToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(commitBody)
+      });
+      if (!commitRes.ok) throw new Error('更新失敗');
+    }
+
     // createRepo
     document.getElementById('createRepoBtn').onclick = createRepo;
     async function createRepo() {
@@ -783,12 +822,10 @@
       const title = document.getElementById('editPageTitle').value.trim();
       const pdf = document.getElementById('editPdfUrl').value.trim();
       try {
-        // 讀取既有 data.json 以拿 sha
         const url = `https://api.github.com/repos/${currentUser}/${currentEditRepo}/contents/data.json`;
         const getRes = await fetch(url, { headers: { 'Authorization': `token ${currentToken}` } });
         const meta = await getRes.json();
         const old = JSON.parse(decodeURIComponent(escape(atob(meta.content))));
-        // 組新 config
         const newCfg = {
           pageTitle: title,
           lang: old.lang,
@@ -807,6 +844,10 @@
           body: JSON.stringify(body)
         });
         if (!putRes.ok) throw new Error('更新設定失敗');
+
+        // 🔁 新增：同步 og:title = pageTitle, og:description = repoName
+        await updateOGMeta(currentEditRepo, title, currentEditRepo);
+
         alert('已更新網站設定');
         closeEditModal();
         loadRepos();
