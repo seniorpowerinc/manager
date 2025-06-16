@@ -712,7 +712,13 @@
         window.open(siteUrl, '_blank');
         document.getElementById('newRepoLink').innerHTML =
           `已創建並發布: <a href="${siteUrl}" target="_blank">${siteUrl}</a>`;
-
+        
+        try {
+          await updateOGMeta(name, pageTitle, name); // 可自行更換為其他描述文字
+        } catch (e) {
+          console.warn('⚠️ 無法設定 og meta：', e.message);
+        }
+        
         alert('禮物網站建立並發布成功！');
 
         // 7) 重置表單 & 重新載入列表
@@ -844,9 +850,6 @@
           body: JSON.stringify(body)
         });
         if (!putRes.ok) throw new Error('更新設定失敗');
-
-        // 🔁 新增：同步 og:title = pageTitle, og:description = repoName
-        await updateOGMeta(currentEditRepo, title, currentEditRepo);
 
         alert('已更新網站設定');
         closeEditModal();
