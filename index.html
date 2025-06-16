@@ -607,6 +607,12 @@
       return new TextDecoder('utf-8').decode(bytes);
     }
 
+    function encodeBase64Utf8(str) {
+      const utf8Bytes = new TextEncoder().encode(str);
+      const bin = Array.from(utf8Bytes, b => String.fromCharCode(b)).join('');
+      return btoa(bin);
+    }
+    
     async function updateOGMeta(repo, newTitle, newDesc) {
       const filePath = 'index.html';
       const url = `https://api.github.com/repos/${currentUser}/${repo}/contents/${filePath}`;
@@ -619,7 +625,7 @@
 
       function replaceOrInsert(prop, value) {
         const tag = `<meta property=\"${prop}\" content=\"${value}\">`;
-        const re = new RegExp(`<meta\\s+property=\\"${prop}\\"[^>]*>`, 'i');
+        const re = new RegExp(`<meta\\s+property=['"]${prop}['"][^>]*>`, 'i');
         if (re.test(content)) {
           content = content.replace(re, tag);
         } else {
@@ -629,7 +635,7 @@
       if (newTitle) replaceOrInsert('og:title', newTitle);
       if (newDesc) replaceOrInsert('og:description', newDesc);
 
-      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const encoded = encodeBase64Utf8(content);
       const commitBody = {
         message: 'Update og:title / og:description via Manager',
         content: encoded,
