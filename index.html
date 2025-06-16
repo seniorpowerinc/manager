@@ -668,7 +668,6 @@
         await new Promise(r => setTimeout(r, 2000));
 
         // 2) 上傳封面圖
-        await uploadFile(name, 'images/.gitkeep', '', false);
         const imgB64 = await new Promise(r => {
           const fr = new FileReader();
           fr.onload = () => r(fr.result.split(',')[1]);
