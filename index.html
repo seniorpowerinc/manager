@@ -612,22 +612,18 @@
       let content = atob(data.content.replace(/\n/g, ''));
 
       function replaceOrInsert(prop, value) {
-        const tag = `<meta property="${prop}" content="${value}">`;
-        const re = new RegExp(`<meta\\s+property=["']${prop}["'][^>]*>`, 'i');
+        const tag = `<meta property=\"${prop}\" content=\"${value}\">`;
+        const re = new RegExp(`<meta\\s+property=\\"${prop}\\"[^>]*>`, 'i');
         if (re.test(content)) {
-          console.log(`[updateOGMeta] 匹配到原始 <meta ${prop}>，执行替换`);
           content = content.replace(re, tag);
         } else {
-          console.log(`[updateOGMeta] 未匹配到 <meta ${prop}>，执行插入`);
-          content = content.replace(
-            /<head(\s*)>/i,
-            `<head$1>\n    ${tag}`);
+          content = content.replace(/<head([^>]*)>/i, `<head$1>\n    ${tag}`);
         }
       }
       if (newTitle) replaceOrInsert('og:title', newTitle);
       if (newDesc) replaceOrInsert('og:description', newDesc);
 
-      const encoded = toBase64(content);
+      const encoded = btoa(unescape(encodeURIComponent(content)));
       const commitBody = {
         message: 'Update og:title / og:description via Manager',
         content: encoded,
