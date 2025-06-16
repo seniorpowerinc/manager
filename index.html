@@ -784,21 +784,37 @@
     }
     function closeRenameModal() { document.getElementById('renameModal').classList.remove('show'); }
     async function confirmRename() {
-      const newName = document.getElementById('newRepoName').value.trim();
-      const newDesc = document.getElementById('newRepoDescription').value.trim();
-      if (!newName) { alert('新名稱不可為空'); return; }
-      try {
-        const res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
-          method: 'PATCH',
-          headers: { 'Authorization': `token ${currentToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName, description: newDesc })
-        });
-        if (!res.ok) throw new Error('重新命名失敗');
-        alert('已重新命名');
-        closeRenameModal();
-        await loadRepos();
-      } catch (e) { alert('錯誤：' + e.message); }
+  const newName = document.getElementById('newRepoName').value.trim();
+  const newDesc = document.getElementById('newRepoDescription').value.trim();
+  if (!newName) { alert('新名稱不可為空'); return; }
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${currentToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: newName, description: newDesc })
+    });
+
+    if (!res.ok) throw new Error('重新命名失敗');
+
+    // 🆕 新增：同步 og:title 和 description
+    try {
+      await updateOGMeta(newName, newName, newDesc || newName);
+    } catch (e) {
+      console.warn('⚠️ og:title/description 更新失敗：', e.message);
     }
+
+    alert('已重新命名');
+    closeRenameModal();
+    await loadRepos();
+
+  } catch (e) {
+    alert('錯誤：' + e.message);
+  }
+}
 
     async function deleteRepo(name) {
       if (!confirm(`確定刪除 ${name}？此操作無法還原！`)) return;
@@ -860,6 +876,8 @@
         });
         if (!putRes.ok) throw new Error('更新設定失敗');
 
+        await updateOGMeta(currentEditRepo, title, currentEditRepo);
+        
         alert('已更新網站設定');
         closeEditModal();
         loadRepos();
