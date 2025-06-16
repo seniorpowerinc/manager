@@ -361,7 +361,7 @@
       <span class="close" onclick="closeRenameModal()">&times;</span>
       <h3>重新命名 Repo</h3>
       <div class="form-group">
-        <label>新名稱</label>
+        <label>新名稱(禁止中文)</label>
         <div style="display: flex; align-items: center;">
           <span style="white-space: nowrap;">https://seniorpowerinc.github.io/</span>
           <input id="newRepoName" type="text" placeholder="網址名稱" style="flex: 1; margin-left: 8px;">
@@ -377,7 +377,7 @@
   </div>
   <script>
     // UTF8-safe base64
-    function toBase64Utf8(str) {
+    function toBase64(str) {
       const utf8Bytes = new TextEncoder().encode(str);
       const bin = Array.from(utf8Bytes, b => String.fromCharCode(b)).join('');
       return btoa(bin);
@@ -629,7 +629,7 @@
       if (newTitle) replaceOrInsert('og:title', newTitle);
       if (newDesc) replaceOrInsert('og:description', newDesc);
 
-      const encoded =  toBase64Utf8(content);
+      const encoded =  toBase64(content);
       const commitBody = {
         message: 'Update og:title / og:description via Manager',
         content: encoded,
