@@ -378,9 +378,7 @@
   <script>
     // UTF8-safe base64
     function toBase64(str) {
-      const utf8Bytes = new TextEncoder().encode(str);
-      const bin = Array.from(utf8Bytes, b => String.fromCharCode(b)).join('');
-      return btoa(bin);
+      return btoa(unescape(encodeURIComponent(str)));
     }
     const TEMPLATE_OWNER = 'seniorpowerinc';
     const TEMPLATE_REPO = 'gift-template';
@@ -617,7 +615,7 @@
         const tag = `<meta property="${prop}" content="${value}">`;
         const re = new RegExp(`<meta\\s+property=["']${prop}["'][^>]*>`, 'i');
         if (re.test(content)) {
-          console.log(`[updateOGMeta] 匹配到原始 <meta ${prop}>，执行替换`); 
+          console.log(`[updateOGMeta] 匹配到原始 <meta ${prop}>，执行替换`);
           content = content.replace(re, tag);
         } else {
           console.log(`[updateOGMeta] 未匹配到 <meta ${prop}>，执行插入`);
@@ -629,7 +627,7 @@
       if (newTitle) replaceOrInsert('og:title', newTitle);
       if (newDesc) replaceOrInsert('og:description', newDesc);
 
-      const encoded =  toBase64(content);
+      const encoded = toBase64(content);
       const commitBody = {
         message: 'Update og:title / og:description via Manager',
         content: encoded,
@@ -723,13 +721,13 @@
         window.open(siteUrl, '_blank');
         document.getElementById('newRepoLink').innerHTML =
           `已建立網站並發布: <a href="${siteUrl}" target="_blank">${siteUrl}</a>`;
-        
+
         try {
           await updateOGMeta(name, pageTitle, name); // 可自行更換為其他描述文字
         } catch (e) {
           console.warn('⚠️ 無法設定 og meta：', e.message);
         }
-        
+
 
         // 7) 重置表單 & 重新載入列表
         document.getElementById('repoName').value = '';
@@ -785,37 +783,37 @@
     }
     function closeRenameModal() { document.getElementById('renameModal').classList.remove('show'); }
     async function confirmRename() {
-  const newName = document.getElementById('newRepoName').value.trim();
-  const newDesc = document.getElementById('newRepoDescription').value.trim();
-  if (!newName) { alert('新名稱不可為空'); return; }
+      const newName = document.getElementById('newRepoName').value.trim();
+      const newDesc = document.getElementById('newRepoDescription').value.trim();
+      if (!newName) { alert('新名稱不可為空'); return; }
 
-  try {
-    const res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `token ${currentToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ name: newName, description: newDesc })
-    });
+      try {
+        const res = await fetch(`https://api.github.com/repos/${currentUser}/${renameTarget}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `token ${currentToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: newName, description: newDesc })
+        });
 
-    if (!res.ok) throw new Error('重新命名失敗');
+        if (!res.ok) throw new Error('重新命名失敗');
 
-    // 🆕 新增：同步 og:title 和 description
-    try {
-      await updateOGMeta(newName, null, newDesc);
-    } catch (e) {
-      console.warn('⚠️ og:title/description 更新失敗：', e.message);
+        // 🆕 新增：同步 og:title 和 description
+        try {
+          await updateOGMeta(newName, null, newDesc);
+        } catch (e) {
+          console.warn('⚠️ og:title/description 更新失敗：', e.message);
+        }
+
+        alert('已重新命名');
+        closeRenameModal();
+        await loadRepos();
+
+      } catch (e) {
+        alert('錯誤：' + e.message);
+      }
     }
-
-    alert('已重新命名');
-    closeRenameModal();
-    await loadRepos();
-
-  } catch (e) {
-    alert('錯誤：' + e.message);
-  }
-}
 
     async function deleteRepo(name) {
       if (!confirm(`確定刪除 ${name}？此操作無法還原！`)) return;
@@ -878,7 +876,7 @@
         if (!putRes.ok) throw new Error('更新設定失敗');
 
         await updateOGMeta(currentEditRepo, title, null);
-        
+
         alert('已更新網站設定');
         closeEditModal();
         loadRepos();
