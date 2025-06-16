@@ -313,7 +313,7 @@
           </div>
         </div>
 
-        <button id="createRepoBtn" class="btn success">創建</button>
+        <button id="createRepoBtn" class="btn success">建立網站</button>
         <span id="newRepoLink" style="margin-left:16px;"></span>
       </div>
 
@@ -331,7 +331,7 @@
       <span class="close" onclick="closeEditModal()">&times;</span>
       <h3>編輯網站設定</h3>
       <div class="form-group">
-        <label>網站名稱 (pageTitle)</label>
+        <label>網站名稱</label>
         <input id="editPageTitle" type="text">
       </div>
       <div class="form-group">
@@ -362,11 +362,10 @@
       <h3>重新命名 Repo</h3>
       <div class="form-group">
         <label>新名稱</label>
-        <input id="newRepoName" type="text">
-      </div>
-      <div class="form-group">
-        <label>新描述</label>
-        <textarea id="newRepoDescription" rows="2"></textarea>
+        <div style="display: flex; align-items: center;">
+          <span style="white-space: nowrap;">https://seniorpowerinc.github.io/</span>
+          <input id="repoName" type="text" placeholder="網址名稱" style="flex: 1; margin-left: 8px;">
+        </div>
       </div>
       <button class="btn success" onclick="confirmRename()">確認</button>
       <button class="btn" onclick="closeRenameModal()">取消</button>
