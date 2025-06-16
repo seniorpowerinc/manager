@@ -628,7 +628,7 @@
       if (newTitle) replaceOrInsert('og:title', newTitle);
       if (newDesc) replaceOrInsert('og:description', newDesc);
 
-      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const encoded = btoa(content);
       const commitBody = {
         message: 'Update og:title / og:description via Manager',
         content: encoded,
