@@ -657,7 +657,7 @@
       if (!uploadedCoverFile) return alert('請上傳封面圖');
 
       const btn = document.getElementById('createRepoBtn');
-      btn.innerHTML = '創建中…<span class="loading"></span>';
+      btn.innerHTML = '建立網站中…<span class="loading"></span>';
       btn.disabled = true;
 
       try {
@@ -721,7 +721,7 @@
         // 6) 成功後打開新分頁 & 顯示連結
         window.open(siteUrl, '_blank');
         document.getElementById('newRepoLink').innerHTML =
-          `已創建並發布: <a href="${siteUrl}" target="_blank">${siteUrl}</a>`;
+          `已建立網站並發布: <a href="${siteUrl}" target="_blank">${siteUrl}</a>`;
         
         try {
           await updateOGMeta(name, pageTitle, name); // 可自行更換為其他描述文字
@@ -729,7 +729,6 @@
           console.warn('⚠️ 無法設定 og meta：', e.message);
         }
         
-        alert('禮物網站建立並發布成功！');
 
         // 7) 重置表單 & 重新載入列表
         document.getElementById('repoName').value = '';
@@ -742,7 +741,7 @@
       } catch (e) {
         alert('錯誤：' + e.message);
       } finally {
-        btn.innerHTML = '創建';
+        btn.innerHTML = '建立網站';
         btn.disabled = false;
       }
     }
