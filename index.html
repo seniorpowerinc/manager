@@ -803,7 +803,7 @@
 
         // 🆕 新增：同步 og:title 和 description
         try {
-          await updateOGMeta(newName, null, newDesc);
+          await updateOGMeta(newName, null, newDesc || newName);
         } catch (e) {
           console.warn('⚠️ og:title/description 更新失敗：', e.message);
         }
