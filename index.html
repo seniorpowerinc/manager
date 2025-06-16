@@ -377,10 +377,11 @@
   </div>
   <script>
     // UTF8-safe base64
-    function toBase64(str) {
-      return btoa(unescape(encodeURIComponent(str)));
+    function toBase64Utf8(str) {
+      const utf8Bytes = new TextEncoder().encode(str);
+      const bin = Array.from(utf8Bytes, b => String.fromCharCode(b)).join('');
+      return btoa(bin);
     }
-
     const TEMPLATE_OWNER = 'seniorpowerinc';
     const TEMPLATE_REPO = 'gift-template';
 
@@ -628,7 +629,7 @@
       if (newTitle) replaceOrInsert('og:title', newTitle);
       if (newDesc) replaceOrInsert('og:description', newDesc);
 
-      const encoded = btoa(content);
+      const encoded =  toBase64Utf8(content);
       const commitBody = {
         message: 'Update og:title / og:description via Manager',
         content: encoded,
@@ -802,7 +803,7 @@
 
     // 🆕 新增：同步 og:title 和 description
     try {
-      await updateOGMeta(newName, newName, newDesc || newName);
+      await updateOGMeta(newName, null, newDesc);
     } catch (e) {
       console.warn('⚠️ og:title/description 更新失敗：', e.message);
     }
@@ -876,7 +877,7 @@
         });
         if (!putRes.ok) throw new Error('更新設定失敗');
 
-        await updateOGMeta(currentEditRepo, title, currentEditRepo);
+        await updateOGMeta(currentEditRepo, title, null);
         
         alert('已更新網站設定');
         closeEditModal();
