@@ -284,12 +284,15 @@
         <h2>➕ 新增禮物網站</h2>
 
         <div class="form-group">
-          <label>網址名稱</label>
-          <input id="repoName" type="text" placeholder="例如：https://seniorpowerinc.github.io/(網址名稱)">
+          <label>網址名稱(禁止中文)</label>
+          <div style="display: flex; align-items: center;">
+            <span style="white-space: nowrap;">https://seniorpowerinc.github.io/</span>
+            <input id="repoName" type="text" placeholder="網址名稱" style="flex: 1; margin-left: 8px;">
+          </div>
         </div>
 
         <div class="form-group">
-          <label>網站頁面名稱 (pageTitle)</label>
+          <label>網站頁面名稱</label>
           <input id="pageTitle" type="text" placeholder="例如：書名等等">
         </div>
 
